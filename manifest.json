@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "NightGuard — Blue Light & Dark Mode Scheduler",
+  "version": "1.0.0",
+  "description": "Automatically reduces blue light and activates dark mode on a schedule. Gradual transitions for comfortable nighttime browsing.",
+  "permissions": [
+    "storage",
+    "alarms",
+    "activeTab",
+    "scripting",
+    "geolocation",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "css": [],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}
