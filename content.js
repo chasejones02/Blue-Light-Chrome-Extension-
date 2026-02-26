@@ -80,15 +80,15 @@
         filter: brightness(${preBrightness}%) invert(100%) hue-rotate(180deg) !important;
         transition: filter 10s ease !important;
       }
-      /* Re-invert media to restore natural colors; they are dimmed by the pre-brightness */
+      /* Re-invert images/video to restore natural colors; they are dimmed by the pre-brightness */
       html img,
       html video,
       html canvas,
       html svg image,
-      html picture,
-      html iframe {
+      html picture {
         filter: invert(100%) hue-rotate(180deg) !important;
       }
+      /* iframes are NOT re-inverted — they get dark mode applied like the rest of the page */
     `;
   }
 
