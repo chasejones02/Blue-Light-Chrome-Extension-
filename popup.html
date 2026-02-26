@@ -469,9 +469,145 @@
       pointer-events: none;
       transition: opacity 0.3s;
     }
+
+    /* ── Page Navigation ──────────────────── */
+    .pages-wrapper {
+      display: flex;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .pages-wrapper.on-filters {
+      transform: translateX(-360px);
+    }
+
+    .page {
+      width: 360px;
+      flex-shrink: 0;
+    }
+
+    /* ── Explore More Link ─────────────────── */
+    .explore-link {
+      text-align: center;
+      font-size: 11px;
+      color: var(--accent-blue);
+      cursor: pointer;
+      margin-top: 8px;
+      padding: 2px 0;
+      user-select: none;
+      transition: color 0.2s;
+    }
+
+    .explore-link:hover {
+      color: var(--accent-purple);
+      text-decoration: underline;
+    }
+
+    /* ── Filters Page ─────────────────────── */
+    .filters-header {
+      display: flex;
+      align-items: center;
+      padding: 20px 20px 12px;
+      gap: 10px;
+    }
+
+    .back-btn {
+      background: none;
+      border: none;
+      color: var(--accent-warm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 6px 10px 6px 4px;
+      border-radius: var(--radius-sm);
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .back-btn:hover {
+      background: var(--bg-hover);
+    }
+
+    .filters-page-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .filter-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .filter-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-card:hover {
+      background: var(--bg-hover);
+    }
+
+    .filter-card-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .filter-card-icon.sleep  { background: rgba(167, 139, 250, 0.15); }
+    .filter-card-icon.reader { background: rgba(245, 166, 35, 0.15); }
+    .filter-card-icon.strain { background: rgba(108, 140, 255, 0.15); }
+
+    .filter-card-info {
+      flex: 1;
+    }
+
+    .filter-card-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 3px;
+    }
+
+    .filter-card-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .filter-card-arrow {
+      font-size: 20px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .coming-soon-note {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
+<div class="pages-wrapper" id="pagesWrapper">
+
+<!-- ══ Page 1: Main ══════════════════════════════════════════════════ -->
+<div class="page" id="mainPage">
 
   <!-- Header -->
   <div class="header">
@@ -512,6 +648,7 @@
           <div class="mode-label">Both</div>
         </div>
       </div>
+      <div class="explore-link" id="exploreFiltersBtn">Explore More Filters →</div>
     </div>
 
     <!-- Schedule -->
@@ -570,6 +707,54 @@
   <div class="footer">
     NightGuard v1.0 — Protect your eyes, improve your sleep
   </div>
+
+</div><!-- end #mainPage -->
+
+<!-- ══ Page 2: More Filters ══════════════════════════════════════════ -->
+<div class="page" id="filtersPage">
+
+  <div class="filters-header">
+    <button class="back-btn" id="backBtn">← Back</button>
+    <div class="filters-page-title">More Filters</div>
+  </div>
+
+  <div class="section">
+    <div class="filter-cards">
+
+      <div class="filter-card" data-filter="sleep-prep">
+        <div class="filter-card-icon sleep">😴</div>
+        <div class="filter-card-info">
+          <div class="filter-card-name">Sleep Prep</div>
+          <div class="filter-card-desc">Deep red tones to trigger melatonin and ease you into sleep</div>
+        </div>
+        <div class="filter-card-arrow">›</div>
+      </div>
+
+      <div class="filter-card" data-filter="reader-mode">
+        <div class="filter-card-icon reader">📖</div>
+        <div class="filter-card-info">
+          <div class="filter-card-name">Reader Mode</div>
+          <div class="filter-card-desc">Soft sepia warmth that reduces glare for long reading sessions</div>
+        </div>
+        <div class="filter-card-arrow">›</div>
+      </div>
+
+      <div class="filter-card" data-filter="reduce-eye-strain">
+        <div class="filter-card-icon strain">👁️</div>
+        <div class="filter-card-info">
+          <div class="filter-card-name">Reduce Eye Strain</div>
+          <div class="filter-card-desc">Lowers contrast and blue peaks for extended screen time</div>
+        </div>
+        <div class="filter-card-arrow">›</div>
+      </div>
+
+    </div>
+    <div class="coming-soon-note">More presets coming soon</div>
+  </div>
+
+</div><!-- end #filtersPage -->
+
+</div><!-- end .pages-wrapper -->
 
   <script src="popup.js"></script>
 </body>
