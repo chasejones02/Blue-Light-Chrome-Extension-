@@ -26,6 +26,49 @@ document.addEventListener('DOMContentLoaded', () => {
   const exploreFiltersBtn = document.getElementById('exploreFiltersBtn');
   const backBtn = document.getElementById('backBtn');
 
+  // Filter detail page elements
+  const filterCards        = document.querySelectorAll('.filter-card');
+  const backToFiltersBtn   = document.getElementById('backToFiltersBtn');
+  const filterDetailName   = document.getElementById('filterDetailName');
+  const filterSwatch       = document.getElementById('filterSwatch');
+  const filterCCT          = document.getElementById('filterCCT');
+  const filterDesc         = document.getElementById('filterDesc');
+  const filterIntensitySlider = document.getElementById('filterIntensitySlider');
+  const filterIntensityValue  = document.getElementById('filterIntensityValue');
+  const filterActivateBtn  = document.getElementById('filterActivateBtn');
+
+  // Metadata for the three scientific filter modes
+  const FILTER_META = {
+    'sleep-prep': {
+      name: 'Sleep Prep',
+      swatchColor: '#FF9A00',
+      desc: 'Aggressively blocks melatonin-suppressing blue light (peak 480 nm). Best used 1–3 hours before sleep.',
+      cctStops: [[20, '~4500K'], [40, '~3300K'], [60, '~2700K'], [80, '~2200K'], [100, '~1900K']]
+    },
+    'reduce-eye-strain': {
+      name: 'Reduce Eye Strain',
+      swatchColor: '#FFF5E0',
+      desc: 'Subtly warms the display from 6500K toward 5000K, reducing the harsh LED blue spike without distorting colors.',
+      cctStops: [[20, '~6200K'], [40, '~5800K'], [60, '~5400K'], [80, '~5100K'], [100, '~4800K']]
+    },
+    'reader-mode': {
+      name: 'Reader Mode',
+      swatchColor: '#F5E6C8',
+      desc: 'Low-contrast sepia warmth mimicking warm paper. Reduces glare and contrast fatigue during long reading sessions.',
+      cctStops: [[20, '~5800K'], [40, '~4500K'], [60, '~3800K'], [80, '~3400K'], [100, '~3000K']]
+    }
+  };
+
+  function getNearestCCT(mode, intensity) {
+    const meta = FILTER_META[mode];
+    if (!meta) return '';
+    return meta.cctStops.reduce((prev, curr) =>
+      Math.abs(curr[0] - intensity) < Math.abs(prev[0] - intensity) ? curr : prev
+    )[1];
+  }
+
+  let currentDetailMode = null;
+
   let currentSettings = {};
 
   // ── Load Settings ────────────────────────
@@ -54,9 +97,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Status
     updateStatus();
 
-    // Mode buttons
+    // Mode buttons (main page: bluelight / darkmode / both)
     modeBtns.forEach(btn => {
       btn.classList.toggle('selected', btn.dataset.mode === currentSettings.mode);
+    });
+
+    // Filter cards (filters page: sleep-prep / reduce-eye-strain / reader-mode)
+    filterCards.forEach(card => {
+      card.classList.toggle('selected', card.dataset.filter === currentSettings.mode);
     });
 
     // Schedule type
@@ -143,13 +191,87 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Event Listeners ──────────────────────
 
-  // Page navigation
+  // ── Page Navigation ───────────────────────
   exploreFiltersBtn.addEventListener('click', () => {
+    pagesWrapper.classList.remove('on-detail');
     pagesWrapper.classList.add('on-filters');
   });
 
   backBtn.addEventListener('click', () => {
     pagesWrapper.classList.remove('on-filters');
+    pagesWrapper.classList.remove('on-detail');
+  });
+
+  backToFiltersBtn.addEventListener('click', () => {
+    pagesWrapper.classList.remove('on-detail');
+  });
+
+  // ── Filter Card → Detail Page ─────────────
+  filterCards.forEach(card => {
+    card.addEventListener('click', () => {
+      currentDetailMode = card.dataset.filter;
+      const meta = FILTER_META[currentDetailMode];
+      if (!meta) return;
+
+      // Populate detail page
+      filterDetailName.textContent = meta.name;
+      filterSwatch.style.background = meta.swatchColor;
+      filterDesc.textContent = meta.desc;
+
+      const intensity = currentSettings.intensity || 80;
+      filterIntensitySlider.value = intensity;
+      filterIntensityValue.textContent = `${intensity}%`;
+      filterCCT.textContent = getNearestCCT(currentDetailMode, intensity);
+
+      // Reflect whether this mode is currently active
+      const isActive = currentSettings.mode === currentDetailMode && currentSettings.manualActive;
+      filterActivateBtn.textContent = isActive ? '⏹ Deactivate Filter' : '✦ Activate Filter';
+      filterActivateBtn.classList.toggle('active', isActive);
+
+      pagesWrapper.classList.add('on-detail');
+    });
+  });
+
+  // ── Detail Page: Intensity Slider ─────────
+  filterIntensitySlider.addEventListener('input', () => {
+    const val = parseInt(filterIntensitySlider.value);
+    filterIntensityValue.textContent = `${val}%`;
+    filterCCT.textContent = getNearestCCT(currentDetailMode, val);
+  });
+
+  filterIntensitySlider.addEventListener('change', () => {
+    currentSettings.intensity = parseInt(filterIntensitySlider.value);
+    // Apply immediately if this mode is already the active one
+    if (currentSettings.mode === currentDetailMode && currentSettings.manualActive) {
+      saveSettings();
+    }
+  });
+
+  // ── Detail Page: Activate Button ──────────
+  filterActivateBtn.addEventListener('click', () => {
+    const alreadyActive = currentSettings.mode === currentDetailMode && currentSettings.manualActive;
+
+    if (alreadyActive) {
+      currentSettings.manualActive = false;
+      filterActivateBtn.textContent = '✦ Activate Filter';
+      filterActivateBtn.classList.remove('active');
+    } else {
+      currentSettings.mode = currentDetailMode;
+      currentSettings.intensity = parseInt(filterIntensitySlider.value);
+      currentSettings.manualActive = true;
+      filterActivateBtn.textContent = '⏹ Deactivate Filter';
+      filterActivateBtn.classList.add('active');
+      // Deselect main-page mode buttons since a filter-card mode is now active
+      modeBtns.forEach(b => b.classList.remove('selected'));
+    }
+
+    // Sync filter card selected states
+    filterCards.forEach(card => {
+      card.classList.toggle('selected', card.dataset.filter === currentSettings.mode && currentSettings.manualActive);
+    });
+
+    saveSettings();
+    updateStatus();
   });
 
   // Master toggle
@@ -267,6 +389,10 @@ document.addEventListener('DOMContentLoaded', () => {
       activateBtn.textContent = '✦ Activate Filter';
       activateBtn.classList.remove('active');
     }
+    // Sync filter card selected states (handles deactivating a filter-card mode from the main page)
+    filterCards.forEach(card => {
+      card.classList.toggle('selected', card.dataset.filter === currentSettings.mode && currentSettings.manualActive);
+    });
     saveSettings();
     updateStatus();
   });
