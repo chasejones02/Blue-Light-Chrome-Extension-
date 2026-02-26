@@ -11,7 +11,9 @@ const DEFAULT_SETTINGS = {
   longitude: null,
   intensity: 80,            // 0-100 percentage
   currentIntensity: 0,      // actual current applied intensity
-  isActive: false
+  isActive: false,
+  manualActive: false,      // persistent manual override (ignores schedule)
+  timerEnabled: false       // whether the manual schedule is armed
 };
 
 // ── Sunset/Sunrise Calculation ──────────────────────────────────
@@ -126,7 +128,7 @@ async function updateFilter() {
   
   let startTime = settings.startTime;
   let endTime = settings.endTime;
-  
+
   // Auto sunset/sunrise
   if (settings.scheduleType === 'auto' && settings.latitude && settings.longitude) {
     const sunTimes = calculateSunTimes(settings.latitude, settings.longitude, new Date());
@@ -135,11 +137,18 @@ async function updateFilter() {
     settings.startTime = startTime;
     settings.endTime = endTime;
   }
-  
-  const currentIntensity = calculateCurrentIntensity(settings);
+
+  let currentIntensity;
+  if (settings.manualActive) {
+    currentIntensity = settings.intensity;
+  } else if (settings.scheduleType === 'manual' && !settings.timerEnabled) {
+    currentIntensity = 0;
+  } else {
+    currentIntensity = calculateCurrentIntensity(settings);
+  }
   settings.currentIntensity = currentIntensity;
   settings.isActive = currentIntensity > 0;
-  
+
   await chrome.storage.local.set({ settings });
   await applyToAllTabs(settings, currentIntensity);
 }
@@ -174,7 +183,15 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
       // Always recalculate so a newly opened tab gets the correct intensity
       // rather than a potentially stale value from storage
-      settings.currentIntensity = settings.enabled ? calculateCurrentIntensity(settings) : 0;
+      if (!settings.enabled) {
+        settings.currentIntensity = 0;
+      } else if (settings.manualActive) {
+        settings.currentIntensity = settings.intensity;
+      } else if (settings.scheduleType === 'manual' && !settings.timerEnabled) {
+        settings.currentIntensity = 0;
+      } else {
+        settings.currentIntensity = calculateCurrentIntensity(settings);
+      }
       settings.isActive = settings.currentIntensity > 0;
 
       sendResponse({ settings });
@@ -216,7 +233,11 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     chrome.storage.local.get('settings').then((result) => {
       const settings = { ...DEFAULT_SETTINGS, ...(result.settings || {}) };
       if (settings.enabled) {
-        const currentIntensity = calculateCurrentIntensity(settings);
+        const currentIntensity = settings.manualActive
+          ? settings.intensity
+          : (settings.scheduleType === 'manual' && !settings.timerEnabled)
+            ? 0
+            : calculateCurrentIntensity(settings);
         if (currentIntensity > 0) {
           chrome.tabs.sendMessage(tabId, {
             type: 'UPDATE_FILTER',

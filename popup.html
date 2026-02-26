@@ -395,8 +395,33 @@
       transform: scale(1.15);
     }
 
-    /* ── Preview Button ───────────────────── */
-    .preview-btn {
+    /* ── Set Timer Button ─────────────────── */
+    .set-timer-btn {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .set-timer-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    /* ── Activate Button ──────────────────── */
+    .activate-btn {
       width: 100%;
       padding: 12px;
       margin-top: 8px;
@@ -411,8 +436,18 @@
       transition: all 0.2s;
     }
 
-    .preview-btn:hover {
+    .activate-btn:hover {
       background: linear-gradient(135deg, rgba(245, 166, 35, 0.25), rgba(232, 114, 26, 0.15));
+    }
+
+    .activate-btn.active {
+      background: linear-gradient(135deg, rgba(74, 222, 128, 0.15), rgba(74, 222, 128, 0.1));
+      border-color: rgba(74, 222, 128, 0.35);
+      color: #4ade80;
+    }
+
+    .activate-btn.active:hover {
+      background: linear-gradient(135deg, rgba(74, 222, 128, 0.25), rgba(74, 222, 128, 0.15));
     }
 
     /* ── Footer ───────────────────────────── */
@@ -487,8 +522,11 @@
         <button class="schedule-option" data-type="auto">🌅 Sunset / Sunrise</button>
       </div>
 
+      <!-- Set Timer Button (shown when Manual is selected) -->
+      <button class="set-timer-btn hidden" id="setTimerBtn">⏱ Set Timer</button>
+
       <!-- Manual Time Picker -->
-      <div class="time-row" id="manualTimes">
+      <div class="time-row hidden" id="manualTimes">
         <div class="time-group">
           <div class="time-label">Start (activate)</div>
           <input type="time" class="time-input" id="startTime" value="21:00">
@@ -523,9 +561,9 @@
       </div>
     </div>
 
-    <!-- Preview -->
+    <!-- Activate -->
     <div class="section">
-      <button class="preview-btn" id="previewBtn">👁 Preview Filter Now</button>
+      <button class="activate-btn" id="activateBtn">✦ Activate Filter</button>
     </div>
   </div>
 

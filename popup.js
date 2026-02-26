@@ -20,10 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const sunriseTime = document.getElementById('sunriseTime');
   const intensitySlider = document.getElementById('intensitySlider');
   const intensityValue = document.getElementById('intensityValue');
-  const previewBtn = document.getElementById('previewBtn');
+  const setTimerBtn = document.getElementById('setTimerBtn');
+  const activateBtn = document.getElementById('activateBtn');
 
   let currentSettings = {};
-  let previewActive = false;
 
   // ── Load Settings ────────────────────────
   function loadSettings() {
@@ -62,11 +62,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (currentSettings.scheduleType === 'manual') {
-      manualTimes.classList.remove('hidden');
+      setTimerBtn.classList.remove('hidden');
       autoSection.classList.add('hidden');
+      if (currentSettings.timerEnabled) {
+        manualTimes.classList.remove('hidden');
+        setTimerBtn.textContent = 'Deactivate Timer';
+      } else {
+        manualTimes.classList.add('hidden');
+        setTimerBtn.textContent = '⏱ Set Timer';
+      }
     } else {
+      setTimerBtn.classList.add('hidden');
       manualTimes.classList.add('hidden');
       autoSection.classList.remove('hidden');
+    }
+
+    // Activate button
+    if (currentSettings.manualActive) {
+      activateBtn.textContent = '⏹ Deactivate Filter';
+      activateBtn.classList.add('active');
+    } else {
+      activateBtn.textContent = '✦ Activate Filter';
+      activateBtn.classList.remove('active');
     }
 
     // Time inputs
@@ -88,19 +105,27 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateStatus() {
-    const { enabled, isActive, currentIntensity } = currentSettings;
+    const { enabled, isActive, currentIntensity, manualActive, intensity, timerEnabled } = currentSettings;
 
     if (!enabled) {
       statusDot.className = 'status-dot';
       statusText.textContent = 'Disabled';
       statusIntensity.textContent = '';
+    } else if (manualActive) {
+      statusDot.className = 'status-dot active';
+      statusText.textContent = 'Active — manual override';
+      statusIntensity.textContent = `${intensity}%`;
     } else if (isActive && currentIntensity > 0) {
       statusDot.className = 'status-dot active';
       statusText.textContent = 'Active — filtering';
       statusIntensity.textContent = `${currentIntensity}%`;
-    } else {
+    } else if (timerEnabled) {
       statusDot.className = 'status-dot scheduled';
       statusText.textContent = `Scheduled: ${formatTime(currentSettings.startTime)}`;
+      statusIntensity.textContent = '';
+    } else {
+      statusDot.className = 'status-dot';
+      statusText.textContent = 'Inactive';
       statusIntensity.textContent = '';
     }
   }
@@ -140,15 +165,35 @@ document.addEventListener('DOMContentLoaded', () => {
       opt.classList.add('selected');
       currentSettings.scheduleType = opt.dataset.type;
 
+      // Reset timer when switching schedule type
+      currentSettings.timerEnabled = false;
+      setTimerBtn.textContent = '⏱ Set Timer';
+
       if (opt.dataset.type === 'manual') {
-        manualTimes.classList.remove('hidden');
+        setTimerBtn.classList.remove('hidden');
+        manualTimes.classList.add('hidden');
         autoSection.classList.add('hidden');
       } else {
+        setTimerBtn.classList.add('hidden');
         manualTimes.classList.add('hidden');
         autoSection.classList.remove('hidden');
       }
       saveSettings();
     });
+  });
+
+  // Set Timer / Deactivate Timer toggle
+  setTimerBtn.addEventListener('click', () => {
+    currentSettings.timerEnabled = !currentSettings.timerEnabled;
+    if (currentSettings.timerEnabled) {
+      manualTimes.classList.remove('hidden');
+      setTimerBtn.textContent = 'Deactivate Timer';
+    } else {
+      manualTimes.classList.add('hidden');
+      setTimerBtn.textContent = '⏱ Set Timer';
+    }
+    saveSettings();
+    updateStatus();
   });
 
   // Time inputs
@@ -200,38 +245,18 @@ document.addEventListener('DOMContentLoaded', () => {
     saveSettings();
   });
 
-  // Preview button
-  previewBtn.addEventListener('click', () => {
-    if (previewActive) {
-      // Turn off preview
-      previewActive = false;
-      previewBtn.textContent = '👁 Preview Filter Now';
-      chrome.runtime.sendMessage({ type: 'FORCE_UPDATE' });
+  // Activate Filter button
+  activateBtn.addEventListener('click', () => {
+    currentSettings.manualActive = !currentSettings.manualActive;
+    if (currentSettings.manualActive) {
+      activateBtn.textContent = '⏹ Deactivate Filter';
+      activateBtn.classList.add('active');
     } else {
-      // Turn on preview at full configured intensity
-      previewActive = true;
-      previewBtn.textContent = '⏹ Stop Preview';
-
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]) {
-          chrome.tabs.sendMessage(tabs[0].id, {
-            type: 'UPDATE_FILTER',
-            mode: currentSettings.mode,
-            intensity: currentSettings.intensity,
-            enabled: true
-          }).catch(() => {}); // tab may not have a content script (e.g. chrome://)
-        }
-      });
-
-      // Auto-stop preview after 10 seconds
-      setTimeout(() => {
-        if (previewActive) {
-          previewActive = false;
-          previewBtn.textContent = '👁 Preview Filter Now';
-          chrome.runtime.sendMessage({ type: 'FORCE_UPDATE' });
-        }
-      }, 10000);
+      activateBtn.textContent = '✦ Activate Filter';
+      activateBtn.classList.remove('active');
     }
+    saveSettings();
+    updateStatus();
   });
 
   // ── Initialize ───────────────────────────
