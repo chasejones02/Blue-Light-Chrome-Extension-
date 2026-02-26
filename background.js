@@ -9,7 +9,6 @@ const DEFAULT_SETTINGS = {
   endTime: '07:00',         // 7 AM
   latitude: null,
   longitude: null,
-  transitionMinutes: 20,
   intensity: 80,            // 0-100 percentage
   currentIntensity: 0,      // actual current applied intensity
   isActive: false
@@ -79,52 +78,12 @@ function isInActiveWindow(startTime, endTime) {
   }
 }
 
-// ── Intensity Calculation for Gradual Transition ────────────────
+// ── Intensity Calculation ────────────────────────────────────────
+// Binary on/off based on the schedule window.
+// The 15-second visual fade-in/out is handled by CSS transitions in content.js.
 function calculateCurrentIntensity(settings) {
-  const { startTime, endTime, transitionMinutes, intensity } = settings;
-  const now = getCurrentMinutes();
-  const start = timeToMinutes(startTime);
-  const end = timeToMinutes(endTime);
-  const maxIntensity = intensity;
-  
-  // Normalize times for midnight-crossing math
-  const normalize = (t, ref) => {
-    let diff = t - ref;
-    if (diff < -720) diff += 1440;
-    if (diff > 720) diff -= 1440;
-    return diff;
-  };
-  
-  const nowFromStart = normalize(now, start);
-  const endFromStart = normalize(end, start);
-  
-  // Not in active window
-  if (nowFromStart < 0 || nowFromStart > endFromStart) {
-    // Check if we're in the fade-out period before end time
-    const nowFromEnd = normalize(now, end);
-    if (nowFromEnd >= -transitionMinutes && nowFromEnd < 0) {
-      // Fading out
-      const fadeOutProgress = (transitionMinutes + nowFromEnd) / transitionMinutes;
-      return Math.round(maxIntensity * (1 - fadeOutProgress));
-    }
-    return 0;
-  }
-  
-  // In the fade-in period
-  if (nowFromStart < transitionMinutes) {
-    const fadeInProgress = nowFromStart / transitionMinutes;
-    return Math.round(maxIntensity * fadeInProgress);
-  }
-  
-  // In the fade-out period approaching end
-  const timeToEnd = endFromStart - nowFromStart;
-  if (timeToEnd < transitionMinutes) {
-    const fadeOutProgress = timeToEnd / transitionMinutes;
-    return Math.round(maxIntensity * fadeOutProgress);
-  }
-  
-  // Fully active
-  return maxIntensity;
+  const { startTime, endTime, intensity } = settings;
+  return isInActiveWindow(startTime, endTime) ? intensity : 0;
 }
 
 // ── Apply Filter to All Tabs ────────────────────────────────────

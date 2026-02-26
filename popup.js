@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const sunriseTime = document.getElementById('sunriseTime');
   const intensitySlider = document.getElementById('intensitySlider');
   const intensityValue = document.getElementById('intensityValue');
-  const transitionDuration = document.getElementById('transitionDuration');
   const previewBtn = document.getElementById('previewBtn');
 
   let currentSettings = {};
@@ -86,9 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Intensity
     intensitySlider.value = currentSettings.intensity || 80;
     intensityValue.textContent = `${currentSettings.intensity || 80}%`;
-
-    // Transition
-    transitionDuration.value = currentSettings.transitionMinutes || 20;
   }
 
   function updateStatus() {
@@ -201,12 +197,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   intensitySlider.addEventListener('change', () => {
-    saveSettings();
-  });
-
-  // Transition duration
-  transitionDuration.addEventListener('change', () => {
-    currentSettings.transitionMinutes = parseInt(transitionDuration.value);
     saveSettings();
   });
 
