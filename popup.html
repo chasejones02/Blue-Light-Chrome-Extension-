@@ -480,6 +480,10 @@
       transform: translateX(-360px);
     }
 
+    .pages-wrapper.on-detail {
+      transform: translateX(-720px);
+    }
+
     .page {
       width: 360px;
       flex-shrink: 0;
@@ -600,6 +604,53 @@
       color: var(--text-muted);
       margin-top: 6px;
       font-style: italic;
+    }
+
+    /* ── Filter Card Selected State ───────── */
+    .filter-card.selected {
+      border-color: var(--accent-warm);
+      background: var(--accent-warm-dim);
+    }
+
+    .filter-card.selected .filter-card-name {
+      color: var(--accent-warm);
+    }
+
+    .filter-card.selected .filter-card-arrow {
+      color: var(--accent-warm);
+    }
+
+    /* ── Filter Detail Page ───────────────── */
+    .filter-preview-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .filter-preview-swatch {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-sm);
+      flex-shrink: 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .filter-preview-cct {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      color: var(--accent-warm);
+      margin-bottom: 5px;
+    }
+
+    .filter-preview-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.5;
     }
   </style>
 </head>
@@ -753,6 +804,41 @@
   </div>
 
 </div><!-- end #filtersPage -->
+
+<!-- ══ Page 3: Filter Detail ══════════════════════════════════════════ -->
+<div class="page" id="filterDetailPage">
+
+  <div class="filters-header">
+    <button class="back-btn" id="backToFiltersBtn">← Back</button>
+    <div class="filters-page-title" id="filterDetailName">Sleep Prep</div>
+  </div>
+
+  <div class="section">
+    <div class="filter-preview-card">
+      <div class="filter-preview-swatch" id="filterSwatch"></div>
+      <div class="filter-preview-info">
+        <div class="filter-preview-cct" id="filterCCT"></div>
+        <div class="filter-preview-desc" id="filterDesc"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Intensity</div>
+    <div class="slider-container">
+      <div class="slider-header">
+        <span class="slider-label">Filter strength</span>
+        <span class="slider-value" id="filterIntensityValue">80%</span>
+      </div>
+      <input type="range" class="slider" id="filterIntensitySlider" min="10" max="100" value="80" step="1">
+    </div>
+  </div>
+
+  <div class="section">
+    <button class="activate-btn" id="filterActivateBtn">✦ Activate Filter</button>
+  </div>
+
+</div><!-- end #filterDetailPage -->
 
 </div><!-- end .pages-wrapper -->
 
