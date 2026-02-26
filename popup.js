@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const intensityValue = document.getElementById('intensityValue');
   const setTimerBtn = document.getElementById('setTimerBtn');
   const activateBtn = document.getElementById('activateBtn');
+  const pagesWrapper = document.getElementById('pagesWrapper');
+  const exploreFiltersBtn = document.getElementById('exploreFiltersBtn');
+  const backBtn = document.getElementById('backBtn');
 
   let currentSettings = {};
 
@@ -139,6 +142,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ── Event Listeners ──────────────────────
+
+  // Page navigation
+  exploreFiltersBtn.addEventListener('click', () => {
+    pagesWrapper.classList.add('on-filters');
+  });
+
+  backBtn.addEventListener('click', () => {
+    pagesWrapper.classList.remove('on-filters');
+  });
 
   // Master toggle
   masterToggle.addEventListener('change', () => {
