@@ -231,13 +231,31 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 // ── Initialize ──────────────────────────────────────────────────
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.get('settings').then((result) => {
-    if (!result.settings) {
-      chrome.storage.local.set({ settings: DEFAULT_SETTINGS });
+chrome.runtime.onInstalled.addListener(async () => {
+  const result = await chrome.storage.local.get('settings');
+  if (!result.settings) {
+    await chrome.storage.local.set({ settings: DEFAULT_SETTINGS });
+  }
+
+  // Inject content script into tabs already open at install/update time —
+  // they won't have content.js because it only auto-injects on page load.
+  const tabs = await chrome.tabs.query({});
+  for (const tab of tabs) {
+    if (tab.url &&
+        !tab.url.startsWith('chrome://') &&
+        !tab.url.startsWith('chrome-extension://')) {
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content.js']
+        });
+      } catch (e) {
+        // Tab not injectable (e.g., restricted page) — skip
+      }
     }
-    updateFilter();
-  });
+  }
+
+  updateFilter();
 });
 
 // Run on startup
