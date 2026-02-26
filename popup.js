@@ -155,8 +155,18 @@ document.addEventListener('DOMContentLoaded', () => {
     intensityValue.textContent = `${currentSettings.intensity || 80}%`;
   }
 
+  const MODE_NAMES = {
+    'bluelight':          'Blue Light',
+    'darkmode':           'Dark Mode',
+    'both':               'Blue Light + Dark',
+    'sleep-prep':         'Sleep Prep',
+    'reduce-eye-strain':  'Eye Strain',
+    'reader-mode':        'Reader Mode'
+  };
+
   function updateStatus() {
-    const { enabled, isActive, currentIntensity, manualActive, intensity, timerEnabled } = currentSettings;
+    const { enabled, isActive, currentIntensity, manualActive, intensity, timerEnabled, mode } = currentSettings;
+    const modeName = MODE_NAMES[mode] || mode;
 
     if (!enabled) {
       statusDot.className = 'status-dot';
@@ -164,11 +174,11 @@ document.addEventListener('DOMContentLoaded', () => {
       statusIntensity.textContent = '';
     } else if (manualActive) {
       statusDot.className = 'status-dot active';
-      statusText.textContent = 'Active — manual override';
+      statusText.textContent = `Active — ${modeName}`;
       statusIntensity.textContent = `${intensity}%`;
     } else if (isActive && currentIntensity > 0) {
       statusDot.className = 'status-dot active';
-      statusText.textContent = 'Active — filtering';
+      statusText.textContent = `Active — ${modeName}`;
       statusIntensity.textContent = `${currentIntensity}%`;
     } else if (timerEnabled) {
       statusDot.className = 'status-dot scheduled';
