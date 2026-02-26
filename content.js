@@ -118,6 +118,7 @@
 
   // Request current state on load
   chrome.runtime.sendMessage({ type: 'GET_STATUS' }, (response) => {
+    if (chrome.runtime.lastError) return; // extension reloaded/updated — ignore
     if (response && response.settings) {
       const s = response.settings;
       updateFilter({

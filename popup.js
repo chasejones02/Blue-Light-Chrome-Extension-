@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
           loadSettings();
         }, 500);
       },
-      (error) => {
+      (_error) => {
         locationBtn.textContent = '❌ Location denied — try again';
         setTimeout(() => {
           locationBtn.textContent = '📍 Detect My Location';
@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
             mode: currentSettings.mode,
             intensity: currentSettings.intensity,
             enabled: true
-          });
+          }).catch(() => {}); // tab may not have a content script (e.g. chrome://)
         }
       });
 

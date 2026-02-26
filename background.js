@@ -79,14 +79,6 @@ function isInActiveWindow(startTime, endTime) {
   }
 }
 
-function minutesUntilTime(targetTime) {
-  const now = getCurrentMinutes();
-  const target = timeToMinutes(targetTime);
-  let diff = target - now;
-  if (diff <= 0) diff += 1440; // wrap to next day
-  return diff;
-}
-
 // ── Intensity Calculation for Gradual Transition ────────────────
 function calculateCurrentIntensity(settings) {
   const { startTime, endTime, transitionMinutes, intensity } = settings;
@@ -194,8 +186,13 @@ async function updateFilter() {
 }
 
 // ── Alarms ──────────────────────────────────────────────────────
-// Check every minute for gradual transitions
-chrome.alarms.create('nightguard-tick', { periodInMinutes: 1 });
+// Check every minute for gradual transitions.
+// Guard against recreating (and thus resetting) the alarm on every service worker wake-up.
+chrome.alarms.get('nightguard-tick', (existing) => {
+  if (!existing) {
+    chrome.alarms.create('nightguard-tick', { periodInMinutes: 1 });
+  }
+});
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'nightguard-tick') {
@@ -204,18 +201,23 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 
 // ── Messages from Popup ─────────────────────────────────────────
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'GET_STATUS') {
     chrome.storage.local.get('settings').then((result) => {
       const settings = { ...DEFAULT_SETTINGS, ...(result.settings || {}) };
-      
+
       // Calculate sun times if auto
       if (settings.scheduleType === 'auto' && settings.latitude && settings.longitude) {
         const sunTimes = calculateSunTimes(settings.latitude, settings.longitude, new Date());
         settings.startTime = sunTimes.sunset;
         settings.endTime = sunTimes.sunrise;
       }
-      
+
+      // Always recalculate so a newly opened tab gets the correct intensity
+      // rather than a potentially stale value from storage
+      settings.currentIntensity = settings.enabled ? calculateCurrentIntensity(settings) : 0;
+      settings.isActive = settings.currentIntensity > 0;
+
       sendResponse({ settings });
     });
     return true; // async response
@@ -250,17 +252,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // ── Tab Events ──────────────────────────────────────────────────
 // Apply filter when new tabs load
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url && 
+  if (changeInfo.status === 'complete' && tab.url &&
       !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
     chrome.storage.local.get('settings').then((result) => {
       const settings = { ...DEFAULT_SETTINGS, ...(result.settings || {}) };
-      if (settings.enabled && settings.currentIntensity > 0) {
-        chrome.tabs.sendMessage(tabId, {
-          type: 'UPDATE_FILTER',
-          mode: settings.mode,
-          intensity: settings.currentIntensity,
-          enabled: true
-        }).catch(() => {});
+      if (settings.enabled) {
+        const currentIntensity = calculateCurrentIntensity(settings);
+        if (currentIntensity > 0) {
+          chrome.tabs.sendMessage(tabId, {
+            type: 'UPDATE_FILTER',
+            mode: settings.mode,
+            intensity: currentIntensity,
+            enabled: true
+          }).catch(() => {});
+        }
       }
     });
   }
