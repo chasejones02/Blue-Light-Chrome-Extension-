@@ -12,7 +12,8 @@ const DEFAULT_SETTINGS = {
   intensity: 80,            // 0-100 percentage
   currentIntensity: 0,      // actual current applied intensity
   isActive: false,
-  manualActive: false       // persistent manual override (ignores schedule)
+  manualActive: false,      // persistent manual override (ignores schedule)
+  timerEnabled: false       // whether the manual schedule is armed
 };
 
 // ── Sunset/Sunrise Calculation ──────────────────────────────────
@@ -137,12 +138,17 @@ async function updateFilter() {
     settings.endTime = endTime;
   }
 
-  const currentIntensity = settings.manualActive
-    ? settings.intensity
-    : calculateCurrentIntensity(settings);
+  let currentIntensity;
+  if (settings.manualActive) {
+    currentIntensity = settings.intensity;
+  } else if (settings.scheduleType === 'manual' && !settings.timerEnabled) {
+    currentIntensity = 0;
+  } else {
+    currentIntensity = calculateCurrentIntensity(settings);
+  }
   settings.currentIntensity = currentIntensity;
   settings.isActive = currentIntensity > 0;
-  
+
   await chrome.storage.local.set({ settings });
   await applyToAllTabs(settings, currentIntensity);
 }
@@ -181,6 +187,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         settings.currentIntensity = 0;
       } else if (settings.manualActive) {
         settings.currentIntensity = settings.intensity;
+      } else if (settings.scheduleType === 'manual' && !settings.timerEnabled) {
+        settings.currentIntensity = 0;
       } else {
         settings.currentIntensity = calculateCurrentIntensity(settings);
       }
@@ -227,7 +235,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       if (settings.enabled) {
         const currentIntensity = settings.manualActive
           ? settings.intensity
-          : calculateCurrentIntensity(settings);
+          : (settings.scheduleType === 'manual' && !settings.timerEnabled)
+            ? 0
+            : calculateCurrentIntensity(settings);
         if (currentIntensity > 0) {
           chrome.tabs.sendMessage(tabId, {
             type: 'UPDATE_FILTER',

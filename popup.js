@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const activateBtn = document.getElementById('activateBtn');
 
   let currentSettings = {};
-  let timerExpanded = false;
 
   // ── Load Settings ────────────────────────
   function loadSettings() {
@@ -65,7 +64,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentSettings.scheduleType === 'manual') {
       setTimerBtn.classList.remove('hidden');
       autoSection.classList.add('hidden');
-      manualTimes.classList.toggle('hidden', !timerExpanded);
+      if (currentSettings.timerEnabled) {
+        manualTimes.classList.remove('hidden');
+        setTimerBtn.textContent = 'Deactivate Timer';
+      } else {
+        manualTimes.classList.add('hidden');
+        setTimerBtn.textContent = '⏱ Set Timer';
+      }
     } else {
       setTimerBtn.classList.add('hidden');
       manualTimes.classList.add('hidden');
@@ -100,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateStatus() {
-    const { enabled, isActive, currentIntensity, manualActive, intensity } = currentSettings;
+    const { enabled, isActive, currentIntensity, manualActive, intensity, timerEnabled } = currentSettings;
 
     if (!enabled) {
       statusDot.className = 'status-dot';
@@ -114,9 +119,13 @@ document.addEventListener('DOMContentLoaded', () => {
       statusDot.className = 'status-dot active';
       statusText.textContent = 'Active — filtering';
       statusIntensity.textContent = `${currentIntensity}%`;
-    } else {
+    } else if (timerEnabled) {
       statusDot.className = 'status-dot scheduled';
       statusText.textContent = `Scheduled: ${formatTime(currentSettings.startTime)}`;
+      statusIntensity.textContent = '';
+    } else {
+      statusDot.className = 'status-dot';
+      statusText.textContent = 'Inactive';
       statusIntensity.textContent = '';
     }
   }
@@ -156,8 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
       opt.classList.add('selected');
       currentSettings.scheduleType = opt.dataset.type;
 
-      // Reset timer expansion on type switch
-      timerExpanded = false;
+      // Reset timer when switching schedule type
+      currentSettings.timerEnabled = false;
       setTimerBtn.textContent = '⏱ Set Timer';
 
       if (opt.dataset.type === 'manual') {
@@ -173,11 +182,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Set Timer toggle
+  // Set Timer / Deactivate Timer toggle
   setTimerBtn.addEventListener('click', () => {
-    timerExpanded = !timerExpanded;
-    manualTimes.classList.toggle('hidden', !timerExpanded);
-    setTimerBtn.textContent = timerExpanded ? '✕ Hide Timer' : '⏱ Set Timer';
+    currentSettings.timerEnabled = !currentSettings.timerEnabled;
+    if (currentSettings.timerEnabled) {
+      manualTimes.classList.remove('hidden');
+      setTimerBtn.textContent = 'Deactivate Timer';
+    } else {
+      manualTimes.classList.add('hidden');
+      setTimerBtn.textContent = '⏱ Set Timer';
+    }
+    saveSettings();
+    updateStatus();
   });
 
   // Time inputs
