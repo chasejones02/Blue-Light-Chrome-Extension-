@@ -395,31 +395,6 @@
       transform: scale(1.15);
     }
 
-    /* ── Transition Duration ──────────────── */
-    .transition-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 10px;
-    }
-
-    .transition-label {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .transition-select {
-      padding: 6px 10px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text-primary);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 12px;
-      outline: none;
-      cursor: pointer;
-    }
-
     /* ── Preview Button ───────────────────── */
     .preview-btn {
       width: 100%;
@@ -545,16 +520,6 @@
           <span class="slider-value" id="intensityValue">80%</span>
         </div>
         <input type="range" class="slider" id="intensitySlider" min="10" max="100" value="80">
-        <div class="transition-row">
-          <span class="transition-label">Fade duration</span>
-          <select class="transition-select" id="transitionDuration">
-            <option value="10">10 min</option>
-            <option value="15">15 min</option>
-            <option value="20" selected>20 min</option>
-            <option value="30">30 min</option>
-            <option value="45">45 min</option>
-          </select>
-        </div>
       </div>
     </div>
 

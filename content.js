@@ -21,7 +21,7 @@
         pointer-events: none;
         z-index: 2147483647;
         mix-blend-mode: multiply;
-        transition: opacity 2s ease;
+        transition: opacity 15s ease;
         opacity: 0;
       `;
       (document.documentElement || document.body).appendChild(overlay);
@@ -72,7 +72,7 @@
     style.textContent = `
       html {
         filter: invert(${invertAmount}%) hue-rotate(180deg) brightness(${brightness}%) contrast(${contrast}%) !important;
-        transition: filter 2s ease !important;
+        transition: filter 15s ease !important;
       }
       /* Don't invert images and videos back — keep them natural */
       html img,
@@ -109,7 +109,7 @@
   }
 
   // Listen for messages from background
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type === 'UPDATE_FILTER') {
       updateFilter(message);
       sendResponse({ success: true });
