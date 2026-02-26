@@ -69,25 +69,26 @@
     }
 
     const normalizedIntensity = intensity / 100;
-    const invertAmount = Math.round(normalizedIntensity * 90);      // up to 90% invert
-    const brightness = 100 + Math.round(normalizedIntensity * 20);  // slight brightness boost
-    const contrast = 100 - Math.round(normalizedIntensity * 10);    // slight contrast reduction
+    // brightness() BEFORE invert() controls how dark backgrounds get after inversion:
+    //   white × preBrightness% → then invert → (1 - preBrightness/100) × 255
+    //   At 100% intensity: brightness(93%) → white becomes #121212 (OLED dark grey, no grey tint)
+    //   At 50% intensity:  brightness(47%) → white becomes #888 (medium dark)
+    const preBrightness = Math.round(normalizedIntensity * 93);
 
     style.textContent = `
       html {
-        filter: invert(${invertAmount}%) hue-rotate(180deg) brightness(${brightness}%) contrast(${contrast}%) !important;
+        filter: brightness(${preBrightness}%) invert(100%) hue-rotate(180deg) !important;
         transition: filter 10s ease !important;
       }
-      /* Don't invert images and videos back — keep them natural */
+      /* Re-invert images/video to restore natural colors; they are dimmed by the pre-brightness */
       html img,
       html video,
       html canvas,
       html svg image,
-      html [style*="background-image"],
-      html picture,
-      html iframe {
+      html picture {
         filter: invert(100%) hue-rotate(180deg) !important;
       }
+      /* iframes are NOT re-inverted — they get dark mode applied like the rest of the page */
     `;
   }
 
