@@ -4,6 +4,10 @@
 (function() {
   'use strict';
 
+  // Guard against double-injection (e.g., scripting.executeScript on already-loaded tabs)
+  if (window.__nightguard_loaded) return;
+  window.__nightguard_loaded = true;
+
   const OVERLAY_ID = 'nightguard-overlay';
   const DARKMODE_ID = 'nightguard-darkmode';
 
@@ -21,7 +25,7 @@
         pointer-events: none;
         z-index: 2147483647;
         mix-blend-mode: multiply;
-        transition: opacity 15s ease;
+        transition: opacity 10s ease;
         opacity: 0;
       `;
       (document.documentElement || document.body).appendChild(overlay);
@@ -72,7 +76,7 @@
     style.textContent = `
       html {
         filter: invert(${invertAmount}%) hue-rotate(180deg) brightness(${brightness}%) contrast(${contrast}%) !important;
-        transition: filter 15s ease !important;
+        transition: filter 10s ease !important;
       }
       /* Don't invert images and videos back — keep them natural */
       html img,
@@ -116,16 +120,23 @@
     }
   });
 
-  // Request current state on load
-  chrome.runtime.sendMessage({ type: 'GET_STATUS' }, (response) => {
-    if (chrome.runtime.lastError) return; // extension reloaded/updated — ignore
-    if (response && response.settings) {
-      const s = response.settings;
-      updateFilter({
-        mode: s.mode,
-        intensity: s.currentIntensity,
-        enabled: s.enabled && s.currentIntensity > 0
-      });
-    }
-  });
+  // Request current state on load, with retry for MV3 service worker wake-up lag
+  function requestStatus(retries) {
+    chrome.runtime.sendMessage({ type: 'GET_STATUS' }, (response) => {
+      if (chrome.runtime.lastError) {
+        if (retries > 0) setTimeout(() => requestStatus(retries - 1), 500);
+        return;
+      }
+      if (response && response.settings) {
+        const s = response.settings;
+        updateFilter({
+          mode: s.mode,
+          intensity: s.currentIntensity,
+          enabled: s.enabled && s.currentIntensity > 0
+        });
+      }
+    });
+  }
+
+  requestStatus(3);
 })();
