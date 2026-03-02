@@ -574,7 +574,42 @@
     .filter-card-icon.sleep     { background: rgba(167, 139, 250, 0.15); }
     .filter-card-icon.reader    { background: rgba(245, 166, 35, 0.15); }
     .filter-card-icon.strain    { background: rgba(108, 140, 255, 0.15); }
-    .filter-card-icon.grayscale { background: rgba(156, 163, 175, 0.15); }
+    .filter-card-icon.grayscale   { background: rgba(156, 163, 175, 0.15); }
+    .filter-card-icon.colorblind  { background: rgba(74, 222, 128, 0.15); }
+
+    .cb-type-toggle {
+      display: flex;
+      background: var(--bg-card);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .cb-type-option {
+      flex: 1;
+      padding: 9px 4px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      background: transparent;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .cb-type-option:not(:last-child) {
+      border-right: 1px solid var(--border);
+    }
+    .cb-type-option.selected {
+      background: var(--accent-warm-dim);
+      color: var(--accent-warm);
+    }
+    .cb-type-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      line-height: 1.4;
+    }
 
     .filter-card-info {
       flex: 1;
@@ -809,6 +844,15 @@
         <div class="filter-card-arrow">›</div>
       </div>
 
+      <div class="filter-card" data-filter="colorblind">
+        <div class="filter-card-icon colorblind">🎨</div>
+        <div class="filter-card-info">
+          <div class="filter-card-name">Color Blind Assist</div>
+          <div class="filter-card-desc">Shifts missing colors into visible channels using Daltonization</div>
+        </div>
+        <div class="filter-card-arrow">›</div>
+      </div>
+
     </div>
     <div class="coming-soon-note">More presets coming soon</div>
   </div>
@@ -833,11 +877,21 @@
     </div>
   </div>
 
+  <div class="section hidden" id="cbTypeSection">
+    <div class="section-label">Deficiency Type</div>
+    <div class="cb-type-toggle">
+      <button class="cb-type-option" data-cbtype="protanopia">Protanopia</button>
+      <button class="cb-type-option" data-cbtype="deuteranopia">Deuteranopia</button>
+      <button class="cb-type-option" data-cbtype="tritanopia">Tritanopia</button>
+    </div>
+    <div class="cb-type-desc" id="cbTypeDesc"></div>
+  </div>
+
   <div class="section">
-    <div class="section-label">Intensity</div>
+    <div class="section-label" id="filterIntensityLabel">Intensity</div>
     <div class="slider-container">
       <div class="slider-header">
-        <span class="slider-label">Filter strength</span>
+        <span class="slider-label" id="filterStrengthLabel">Filter strength</span>
         <span class="slider-value" id="filterIntensityValue">80%</span>
       </div>
       <input type="range" class="slider" id="filterIntensitySlider" min="10" max="100" value="80" step="1">

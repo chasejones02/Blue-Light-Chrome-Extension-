@@ -9,6 +9,116 @@
 
   const OVERLAY_ID    = 'nightguard-overlay';
   const HTMLFILTER_ID = 'nightguard-html-filter'; // single tag owns ALL html { filter } rules
+  const CB_SVG_ID     = 'nightguard-cb-svg';
+  const CB_FILTER_ID  = 'nightguard-cb-filter';
+
+  // ── Color Blindness Daltonization ──────────────────────────────
+  // Simulation matrices from Viénot, Brettel & Mollon (1999).
+  // Each is a 3×3 that maps original RGB → what the deficient eye perceives.
+  const CB_SIM = {
+    protanopia: [
+      0.152286,  1.052583, -0.204868,
+      0.114503,  0.786281,  0.099216,
+     -0.003882, -0.048116,  1.051998
+    ],
+    deuteranopia: [
+      0.367322,  0.860646, -0.227968,
+      0.280085,  0.672501,  0.047413,
+     -0.011820,  0.042940,  0.968881
+    ],
+    tritanopia: [
+      1.255528, -0.076749, -0.178779,
+     -0.078411,  0.930809,  0.147602,
+      0.004733,  0.691367,  0.303900
+    ]
+  };
+
+  // Error redistribution matrices (Daltonize algorithm).
+  // Shifts the "error" (colors the user can't see) into channels they CAN perceive.
+  const CB_ERR_SHIFT = {
+    protanopia: [
+      0,   0, 0,
+      0.7, 0, 0,
+      0.7, 0, 0
+    ],
+    deuteranopia: [
+      0, 0.7, 0,
+      0, 0,   0,
+      0, 0.7, 0
+    ],
+    tritanopia: [
+      0, 0, 0.7,
+      0, 0, 0.7,
+      0, 0, 0
+    ]
+  };
+
+  // Identity 3×3
+  const I3 = [1,0,0, 0,1,0, 0,0,1];
+
+  // 3×3 matrix multiply
+  function mul3(A, B) {
+    const R = new Array(9);
+    for (let r = 0; r < 3; r++)
+      for (let c = 0; c < 3; c++)
+        R[r * 3 + c] = A[r * 3] * B[c] + A[r * 3 + 1] * B[3 + c] + A[r * 3 + 2] * B[6 + c];
+    return R;
+  }
+
+  // Compute the feColorMatrix "values" string for a given type and severity (0–1).
+  // Algorithm: result = original + severity * errShift * (original - simulated)
+  // Collapsed: M = I + severity * errShift * (I - sim)
+  function computeCBMatrix(type, severity) {
+    const sim  = CB_SIM[type]  || CB_SIM.deuteranopia;
+    const es   = CB_ERR_SHIFT[type] || CB_ERR_SHIFT.deuteranopia;
+
+    // diff = I - sim
+    const diff = I3.map((v, i) => v - sim[i]);
+    // correction = errShift × diff
+    const corr = mul3(es, diff);
+    // combined = I + severity × correction
+    const M = I3.map((v, i) => v + severity * corr[i]);
+
+    // Expand 3×3 to 5×4 feColorMatrix (row-major, last row is alpha pass-through)
+    const f = (v) => v.toFixed(6);
+    return [
+      f(M[0]), f(M[1]), f(M[2]), '0', '0',
+      f(M[3]), f(M[4]), f(M[5]), '0', '0',
+      f(M[6]), f(M[7]), f(M[8]), '0', '0',
+      '0',     '0',     '0',     '1', '0'
+    ].join(' ');
+  }
+
+  // Inject or retrieve the inline SVG that hosts the feColorMatrix filter.
+  function ensureCBSvg() {
+    let svg = document.getElementById(CB_SVG_ID);
+    if (!svg) {
+      const NS = 'http://www.w3.org/2000/svg';
+      svg = document.createElementNS(NS, 'svg');
+      svg.id = CB_SVG_ID;
+      svg.setAttribute('style', 'position:absolute;width:0;height:0;pointer-events:none');
+
+      const filter = document.createElementNS(NS, 'filter');
+      filter.id = CB_FILTER_ID;
+      filter.setAttribute('color-interpolation-filters', 'sRGB');
+
+      const matrix = document.createElementNS(NS, 'feColorMatrix');
+      matrix.setAttribute('type', 'matrix');
+      matrix.setAttribute('values', computeCBMatrix('deuteranopia', 0));
+
+      filter.appendChild(matrix);
+      svg.appendChild(filter);
+      (document.documentElement || document.body).appendChild(svg);
+    }
+    return svg.querySelector('feColorMatrix');
+  }
+
+  function removeCBSvg() {
+    const svg = document.getElementById(CB_SVG_ID);
+    if (svg) svg.remove();
+  }
+
+  let _cbType = 'deuteranopia';
 
   // ── Scientific CSS Filter Keyframes ──────────────────────────────
   // Values at intensity levels 0, 20, 40, 60, 80, 100%.
@@ -118,6 +228,7 @@
   // Write the CSS for a given mode directly into the style tag (no transition logic here).
   function _writeHtmlFilter(style, mode, intensity) {
     if (intensity <= 0 || !mode) {
+      removeCBSvg();
       style.textContent = `
         html { filter: none !important; transition: filter 10s ease !important; }
       `;
@@ -125,6 +236,7 @@
     }
 
     if (mode === 'darkmode') {
+      removeCBSvg();
       const preBrightness = Math.round((intensity / 100) * 93);
       // brightness() BEFORE invert() controls darkness:
       //   At 100%: brightness(93%) → white inverts to #121212 (OLED dark grey, no grey tint)
@@ -141,6 +253,7 @@
     }
 
     if (FILTER_KEYFRAMES[mode]) {
+      removeCBSvg();
       style.textContent = `
         html {
           filter: ${computeFilterCSS(mode, intensity)} !important;
@@ -151,10 +264,23 @@
     }
 
     if (mode === 'grayscale') {
+      removeCBSvg();
       const amount = (intensity / 100).toFixed(3);
       style.textContent = `
         html {
           filter: grayscale(${amount}) !important;
+          transition: filter 0.8s ease !important;
+        }
+      `;
+      return;
+    }
+
+    if (mode === 'colorblind') {
+      const matrix = ensureCBSvg();
+      matrix.setAttribute('values', computeCBMatrix(_cbType, intensity / 100));
+      style.textContent = `
+        html {
+          filter: url(#${CB_FILTER_ID}) !important;
           transition: filter 0.8s ease !important;
         }
       `;
@@ -195,9 +321,13 @@
     const wasScientific = !!FILTER_KEYFRAMES[prev];
     const isGrayscale   = mode === 'grayscale';
     const wasGrayscale  = prev === 'grayscale';
+    const isColorblind  = mode === 'colorblind';
+    const wasColorblind = prev === 'colorblind';
     const isCrossType   = (isDark && wasScientific) || (isScientific && wasDark) ||
                           (isGrayscale && (wasDark || wasScientific)) ||
-                          ((isDark || isScientific) && wasGrayscale);
+                          ((isDark || isScientific) && wasGrayscale) ||
+                          (isColorblind && prev !== null && prev !== 'colorblind') ||
+                          (wasColorblind && mode !== 'colorblind' && mode !== null);
 
     // ── OFF: fade current filter out ─────────────────────────────────
     if (intensity <= 0) {
@@ -216,11 +346,8 @@
     // Two-step: dissolve current filter to none first, then fade in the new one.
     if (isCrossType) {
       _activeHtmlMode = null;
+      if (wasColorblind) removeCBSvg();
 
-      // Dark → scientific: use a moderate fade (1s) to gently reduce brightness;
-      //   slightly longer than the old 0.3s snap but still quick enough to limit
-      //   the image-inversion window (dark mode uses invert(100%) on <html>).
-      // Scientific → dark: ease to white (2s) before the page starts darkening.
       const fadeOutMs = wasDark ? 2000 : 2000;
       style.textContent = `
         html { filter: none !important; transition: filter ${fadeOutMs}ms ease !important; }
@@ -268,6 +395,10 @@
     } else if (mode === 'grayscale') {
       applyBlueLight(0);
       applyHtmlFilter('grayscale', intensity);
+    } else if (mode === 'colorblind') {
+      applyBlueLight(0);
+      _cbType = data.colorblindType || 'deuteranopia';
+      applyHtmlFilter('colorblind', intensity);
     }
   }
 
@@ -291,7 +422,8 @@
         updateFilter({
           mode: s.mode,
           intensity: s.currentIntensity,
-          enabled: s.enabled && s.currentIntensity > 0
+          enabled: s.enabled && s.currentIntensity > 0,
+          colorblindType: s.colorblindType
         });
       }
     });
