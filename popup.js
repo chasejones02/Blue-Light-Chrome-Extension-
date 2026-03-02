@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterCards        = document.querySelectorAll('.filter-card');
   const backToFiltersBtn   = document.getElementById('backToFiltersBtn');
   const filterDetailName   = document.getElementById('filterDetailName');
-  const filterSwatch       = document.getElementById('filterSwatch');
+  const filterMockup       = document.getElementById('filterMockup');
   const filterCCT          = document.getElementById('filterCCT');
   const filterDesc         = document.getElementById('filterDesc');
   const filterIntensitySlider = document.getElementById('filterIntensitySlider');
@@ -83,6 +83,263 @@ document.addEventListener('DOMContentLoaded', () => {
     deuteranopia: { label: 'Deuteranopia', desc: 'Green-blind (M-cone deficiency). ~5% of males. Most common form. Red-green confusion.' },
     tritanopia:   { label: 'Tritanopia',   desc: 'Blue-blind (S-cone deficiency). ~0.01% of population. Blue-yellow confusion.' }
   };
+
+  // ── Filter CSS computation (mirrored from content.js) ──
+  const FILTER_KEYFRAMES = {
+    'sleep-prep': {
+        0: { sepia: 0,    saturate: 1.00, brightness: 1.00, contrast: 1.00 },
+       20: { sepia: 0.30, saturate: 1.50, brightness: 0.98, contrast: 1.00 },
+       40: { sepia: 0.55, saturate: 2.00, brightness: 0.95, contrast: 1.00 },
+       60: { sepia: 0.75, saturate: 2.50, brightness: 0.92, contrast: 1.00 },
+       80: { sepia: 0.90, saturate: 3.00, brightness: 0.90, contrast: 1.00 },
+      100: { sepia: 1.00, saturate: 3.50, brightness: 0.88, contrast: 1.00 }
+    },
+    'reduce-eye-strain': {
+        0: { sepia: 0,    saturate: 1.00, brightness: 1.00, contrast: 1.00 },
+       20: { sepia: 0.08, saturate: 1.05, brightness: 0.99, contrast: 0.99 },
+       40: { sepia: 0.15, saturate: 1.10, brightness: 0.98, contrast: 0.98 },
+       60: { sepia: 0.22, saturate: 1.15, brightness: 0.97, contrast: 0.97 },
+       80: { sepia: 0.28, saturate: 1.20, brightness: 0.97, contrast: 0.97 },
+      100: { sepia: 0.35, saturate: 1.30, brightness: 0.96, contrast: 0.96 }
+    },
+    'reader-mode': {
+        0: { sepia: 0,    saturate: 1.00, brightness: 1.00, contrast: 1.00 },
+       20: { sepia: 0.15, saturate: 0.95, brightness: 0.97, contrast: 0.97 },
+       40: { sepia: 0.30, saturate: 0.90, brightness: 0.94, contrast: 0.93 },
+       60: { sepia: 0.45, saturate: 0.85, brightness: 0.90, contrast: 0.90 },
+       80: { sepia: 0.55, saturate: 0.82, brightness: 0.87, contrast: 0.87 },
+      100: { sepia: 0.65, saturate: 0.80, brightness: 0.85, contrast: 0.85 }
+    }
+  };
+
+  const FILTER_STOPS = [0, 20, 40, 60, 80, 100];
+
+  function lerpObj(a, b, t) {
+    const out = {};
+    for (const k of Object.keys(a)) out[k] = a[k] + (b[k] - a[k]) * t;
+    return out;
+  }
+
+  function computeFilterCSS(mode, intensity) {
+    const frames = FILTER_KEYFRAMES[mode];
+    if (!frames) return '';
+    const clamped = Math.max(0, Math.min(100, intensity));
+    let lo = 0, hi = 20;
+    for (let i = 0; i < FILTER_STOPS.length - 1; i++) {
+      if (clamped >= FILTER_STOPS[i] && clamped <= FILTER_STOPS[i + 1]) {
+        lo = FILTER_STOPS[i]; hi = FILTER_STOPS[i + 1]; break;
+      }
+    }
+    const t = hi === lo ? 1 : (clamped - lo) / (hi - lo);
+    const p = lerpObj(frames[lo], frames[hi], t);
+    const f = (v) => v.toFixed(3);
+    return `sepia(${f(p.sepia)}) saturate(${f(p.saturate)}) brightness(${f(p.brightness)}) contrast(${f(p.contrast)})`;
+  }
+
+  function updateMockupFilter(mode, intensity) {
+    if (!filterMockup) return;
+    if (mode === 'grayscale') {
+      filterMockup.style.filter = `grayscale(${(intensity / 100).toFixed(3)})`;
+    } else if (FILTER_KEYFRAMES[mode]) {
+      filterMockup.style.filter = computeFilterCSS(mode, intensity);
+    } else {
+      filterMockup.style.filter = 'none';
+    }
+  }
+
+  // ── Color Blindness Ishihara Preview ──────────────────────────
+  const CB_SIM = {
+    protanopia:   [0.152286,1.052583,-0.204868, 0.114503,0.786281,0.099216, -0.003882,-0.048116,1.051998],
+    deuteranopia: [0.367322,0.860646,-0.227968, 0.280085,0.672501,0.047413, -0.011820,0.042940,0.968881],
+    tritanopia:   [1.255528,-0.076749,-0.178779, -0.078411,0.930809,0.147602, 0.004733,0.691367,0.303900]
+  };
+  const CB_ERR_SHIFT = {
+    protanopia:   [0,0,0, 0.7,0,0, 0.7,0,0],
+    deuteranopia: [0,0.7,0, 0,0,0, 0,0.7,0],
+    tritanopia:   [0,0,0.7, 0,0,0.7, 0,0,0]
+  };
+  const I3 = [1,0,0, 0,1,0, 0,0,1];
+
+  function mul3(A, B) {
+    const R = new Array(9);
+    for (let r = 0; r < 3; r++)
+      for (let c = 0; c < 3; c++)
+        R[r * 3 + c] = A[r * 3] * B[c] + A[r * 3 + 1] * B[3 + c] + A[r * 3 + 2] * B[6 + c];
+    return R;
+  }
+
+  function computeCBMatrix(type, severity) {
+    const sim = CB_SIM[type] || CB_SIM.deuteranopia;
+    const es  = CB_ERR_SHIFT[type] || CB_ERR_SHIFT.deuteranopia;
+    const diff = I3.map((v, i) => v - sim[i]);
+    const corr = mul3(es, diff);
+    const M = I3.map((v, i) => v + severity * corr[i]);
+    const f = (v) => v.toFixed(6);
+    return [
+      f(M[0]), f(M[1]), f(M[2]), '0', '0',
+      f(M[3]), f(M[4]), f(M[5]), '0', '0',
+      f(M[6]), f(M[7]), f(M[8]), '0', '0',
+      '0',     '0',     '0',     '1', '0'
+    ].join(' ');
+  }
+
+  // Ishihara plate colors: background vs number dots, per deficiency type
+  const ISHIHARA_COLORS = {
+    protanopia: {
+      bg:  ['#4CAF50', '#66BB6A', '#388E3C', '#81C784', '#2E7D32', '#A5D6A7'],
+      num: ['#F44336', '#E57373', '#D32F2F', '#EF5350', '#C62828', '#FF8A80']
+    },
+    deuteranopia: {
+      bg:  ['#EF5350', '#E57373', '#F44336', '#FF7043', '#D32F2F', '#FF8A65'],
+      num: ['#66BB6A', '#4CAF50', '#81C784', '#A5D6A7', '#388E3C', '#C8E6C9']
+    },
+    tritanopia: {
+      bg:  ['#42A5F5', '#64B5F6', '#1E88E5', '#90CAF9', '#1565C0', '#BBDEFB'],
+      num: ['#FFEE58', '#FFF176', '#FFD54F', '#FFE082', '#FBC02D', '#FFF9C4']
+    }
+  };
+
+  // Number shapes on a 5×7 grid (col × row). 1 = number dot.
+  const ISHIHARA_NUMBERS = {
+    protanopia: { digit: '8', grid: [
+      [0,1,1,1,0],
+      [1,0,0,0,1],
+      [1,0,0,0,1],
+      [0,1,1,1,0],
+      [1,0,0,0,1],
+      [1,0,0,0,1],
+      [0,1,1,1,0]
+    ]},
+    deuteranopia: { digit: '5', grid: [
+      [1,1,1,1,1],
+      [1,0,0,0,0],
+      [1,1,1,1,0],
+      [0,0,0,0,1],
+      [0,0,0,0,1],
+      [1,0,0,0,1],
+      [0,1,1,1,0]
+    ]},
+    tritanopia: { digit: '2', grid: [
+      [0,1,1,1,0],
+      [1,0,0,0,1],
+      [0,0,0,0,1],
+      [0,0,0,1,0],
+      [0,0,1,0,0],
+      [0,1,0,0,0],
+      [1,1,1,1,1]
+    ]}
+  };
+
+  // Seeded PRNG for deterministic plate generation
+  function seededRandom(seed) {
+    let s = seed;
+    return () => { s = (s * 16807 + 0) % 2147483647; return s / 2147483647; };
+  }
+
+  function generateIshiharaPlate(type) {
+    const size = 140;
+    const cx = size / 2, cy = size / 2, R = size / 2 - 2;
+    const grid = ISHIHARA_NUMBERS[type].grid;
+    const colors = ISHIHARA_COLORS[type];
+    const rand = seededRandom(type === 'protanopia' ? 42 : type === 'deuteranopia' ? 137 : 271);
+
+    // Pack circles inside the main circle
+    const dots = [];
+    const minR = 3.5, maxR = 6;
+    const gap = 1.2;
+
+    for (let attempt = 0; attempt < 1200; attempt++) {
+      const r = minR + rand() * (maxR - minR);
+      const x = 2 + rand() * (size - 4);
+      const y = 2 + rand() * (size - 4);
+
+      // Must be inside the outer circle
+      const dx = x - cx, dy = y - cy;
+      if (dx * dx + dy * dy > (R - r) * (R - r)) continue;
+
+      // Check overlap with existing dots
+      let overlaps = false;
+      for (const d of dots) {
+        const ddx = x - d.x, ddy = y - d.y;
+        const minDist = r + d.r + gap;
+        if (ddx * ddx + ddy * ddy < minDist * minDist) { overlaps = true; break; }
+      }
+      if (overlaps) continue;
+
+      // Determine if this dot falls on the number shape
+      const gridCol = Math.floor(((x - cx) / R + 1) / 2 * 5);
+      const gridRow = Math.floor(((y - cy) / R + 1) / 2 * 7);
+      const isNumber = gridRow >= 0 && gridRow < 7 && gridCol >= 0 && gridCol < 5 && grid[gridRow][gridCol] === 1;
+      const palette = isNumber ? colors.num : colors.bg;
+      const color = palette[Math.floor(rand() * palette.length)];
+
+      dots.push({ x, y, r, color });
+    }
+
+    // Build SVG
+    let circles = '';
+    for (const d of dots) {
+      circles += `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="${d.r.toFixed(1)}" fill="${d.color}"/>`;
+    }
+
+    return `<svg class="ishihara-plate" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <clipPath id="ishihara-clip-${type}"><circle cx="${cx}" cy="${cy}" r="${R}"/></clipPath>
+      </defs>
+      <circle cx="${cx}" cy="${cy}" r="${R}" fill="#1a1a1a"/>
+      <g clip-path="url(#ishihara-clip-${type})">${circles}</g>
+    </svg>`;
+  }
+
+  // SVG filter for the popup preview
+  const CB_PREVIEW_FILTER_ID = 'nightguard-cb-preview';
+  let cbPreviewSvg = null;
+
+  function ensureCBPreviewSvg() {
+    if (!cbPreviewSvg) {
+      const NS = 'http://www.w3.org/2000/svg';
+      cbPreviewSvg = document.createElementNS(NS, 'svg');
+      cbPreviewSvg.setAttribute('style', 'position:absolute;width:0;height:0;pointer-events:none');
+      const filter = document.createElementNS(NS, 'filter');
+      filter.id = CB_PREVIEW_FILTER_ID;
+      filter.setAttribute('color-interpolation-filters', 'sRGB');
+      const matrix = document.createElementNS(NS, 'feColorMatrix');
+      matrix.setAttribute('type', 'matrix');
+      matrix.setAttribute('values', computeCBMatrix('deuteranopia', 0));
+      filter.appendChild(matrix);
+      cbPreviewSvg.appendChild(filter);
+      document.body.appendChild(cbPreviewSvg);
+    }
+    return cbPreviewSvg.querySelector('feColorMatrix');
+  }
+
+  const filterIshihara = document.getElementById('filterIshihara');
+
+  function showIshiharaPreview(type, intensity) {
+    if (!filterIshihara) return;
+
+    // Generate two plates: uncorrected (left) and corrected (right)
+    const plateHtml = generateIshiharaPlate(type);
+
+    filterIshihara.innerHTML =
+      `<div style="text-align:center">
+        <div style="opacity:0.7">${plateHtml}</div>
+        <div class="ishihara-label">Without</div>
+      </div>
+      <div style="text-align:center">
+        <div style="filter:url(#${CB_PREVIEW_FILTER_ID})">${plateHtml}</div>
+        <div class="ishihara-label">With correction</div>
+      </div>`;
+
+    // Update the SVG filter matrix
+    const matrix = ensureCBPreviewSvg();
+    matrix.setAttribute('values', computeCBMatrix(type, intensity / 100));
+  }
+
+  function updateIshiharaFilter(type, intensity) {
+    const matrix = ensureCBPreviewSvg();
+    matrix.setAttribute('values', computeCBMatrix(type, intensity / 100));
+  }
 
   function getNearestCCT(mode, intensity) {
     const meta = FILTER_META[mode];
@@ -250,6 +507,11 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.add('selected');
       currentSettings.colorblindType = btn.dataset.cbtype;
       cbTypeDesc.textContent = CB_TYPE_META[btn.dataset.cbtype].desc;
+      // Update Ishihara preview with the new deficiency type
+      if (currentDetailMode === 'colorblind') {
+        const intensity = parseInt(filterIntensitySlider.value);
+        showIshiharaPreview(btn.dataset.cbtype, intensity);
+      }
       // Apply immediately if this mode is already active
       if (currentSettings.mode === 'colorblind' && currentSettings.manualActive) {
         saveSettings();
@@ -266,7 +528,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Populate detail page
       filterDetailName.textContent = meta.name;
-      filterSwatch.style.background = meta.swatchColor;
       filterDesc.textContent = meta.desc;
 
       const intensity = currentSettings.intensity || 80;
@@ -274,15 +535,23 @@ document.addEventListener('DOMContentLoaded', () => {
       filterIntensityValue.textContent = `${intensity}%`;
       filterCCT.textContent = getNearestCCT(currentDetailMode, intensity);
 
-      // Color blindness type selector: show/hide and configure
+      // Toggle between webpage mockup and Ishihara preview
       if (currentDetailMode === 'colorblind') {
+        filterMockup.classList.add('hidden');
+        filterIshihara.classList.remove('hidden');
+        const cbType = currentSettings.colorblindType || 'deuteranopia';
+        showIshiharaPreview(cbType, intensity);
+
         cbTypeSection.classList.remove('hidden');
         filterIntensityLabel.textContent = 'Severity';
         filterStrengthLabel.textContent = 'Correction strength';
-        const cbType = currentSettings.colorblindType || 'deuteranopia';
         cbTypeBtns.forEach(b => b.classList.toggle('selected', b.dataset.cbtype === cbType));
         cbTypeDesc.textContent = CB_TYPE_META[cbType].desc;
       } else {
+        filterMockup.classList.remove('hidden');
+        filterIshihara.classList.add('hidden');
+        updateMockupFilter(currentDetailMode, intensity);
+
         cbTypeSection.classList.add('hidden');
         filterIntensityLabel.textContent = 'Intensity';
         filterStrengthLabel.textContent = 'Filter strength';
@@ -302,6 +571,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const val = parseInt(filterIntensitySlider.value);
     filterIntensityValue.textContent = `${val}%`;
     filterCCT.textContent = getNearestCCT(currentDetailMode, val);
+    if (currentDetailMode === 'colorblind') {
+      const cbType = currentSettings.colorblindType || 'deuteranopia';
+      updateIshiharaFilter(cbType, val);
+    } else {
+      updateMockupFilter(currentDetailMode, val);
+    }
   });
 
   filterIntensitySlider.addEventListener('change', () => {
