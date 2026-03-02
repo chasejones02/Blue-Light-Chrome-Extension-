@@ -450,6 +450,66 @@
       background: linear-gradient(135deg, rgba(74, 222, 128, 0.25), rgba(74, 222, 128, 0.15));
     }
 
+    /* ── Combine Filters Page ────────────── */
+    .combine-select-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .combine-option {
+      flex: 0 0 auto;
+      padding: 8px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .combine-option:hover {
+      background: var(--bg-hover);
+    }
+
+    .combine-option.selected {
+      border-color: var(--accent-warm);
+      background: var(--accent-warm-dim);
+      color: var(--accent-warm);
+    }
+
+    .combine-option.disabled {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    .combine-slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .combine-ratio-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      max-width: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .combine-ratio-value {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+
     /* ── Footer ───────────────────────────── */
     .footer {
       padding: 12px 20px 16px;
@@ -482,6 +542,10 @@
 
     .pages-wrapper.on-detail {
       transform: translateX(-720px);
+    }
+
+    .pages-wrapper.on-combine {
+      transform: translateX(-1080px);
     }
 
     .page {
@@ -872,9 +936,9 @@
           <div class="mode-icon">🌑</div>
           <div class="mode-label">Dark Mode</div>
         </div>
-        <div class="mode-btn" data-mode="both">
-          <div class="mode-icon">✨</div>
-          <div class="mode-label">Both</div>
+        <div class="mode-btn" data-mode="combine" id="combineBtn">
+          <div class="mode-icon">🔀</div>
+          <div class="mode-label">Combine</div>
         </div>
       </div>
       <div class="explore-link" id="exploreFiltersBtn">Explore More Filters →</div>
@@ -1074,6 +1138,52 @@
   </div>
 
 </div><!-- end #filterDetailPage -->
+
+<!-- ═══════════ Page 5: Combine Filters ═══════════ -->
+<div class="page" id="combinePage">
+  <div class="filters-header">
+    <button class="back-btn" id="backFromCombineBtn">← Back</button>
+    <div class="filters-page-title">Combine Filters</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Filter A</div>
+    <div class="combine-select-grid" id="combineFilter1Grid">
+      <button class="combine-option selected" data-combine="bluelight">🔶 Blue Light</button>
+      <button class="combine-option" data-combine="darkmode">🌑 Dark Mode</button>
+      <button class="combine-option" data-combine="sleep-prep">😴 Sleep Prep</button>
+      <button class="combine-option" data-combine="reduce-eye-strain">👁️ Eye Strain</button>
+      <button class="combine-option" data-combine="reader-mode">📖 Reader</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Filter B</div>
+    <div class="combine-select-grid" id="combineFilter2Grid">
+      <button class="combine-option" data-combine="bluelight">🔶 Blue Light</button>
+      <button class="combine-option selected" data-combine="darkmode">🌑 Dark Mode</button>
+      <button class="combine-option" data-combine="sleep-prep">😴 Sleep Prep</button>
+      <button class="combine-option" data-combine="reduce-eye-strain">👁️ Eye Strain</button>
+      <button class="combine-option" data-combine="reader-mode">📖 Reader</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Blend Ratio</div>
+    <div class="slider-container">
+      <div class="combine-slider-header">
+        <span class="combine-ratio-label" id="combineRatioLabelA">Blue Light</span>
+        <span class="combine-ratio-value" id="combineRatioValue">50 / 50</span>
+        <span class="combine-ratio-label" id="combineRatioLabelB">Dark Mode</span>
+      </div>
+      <input type="range" class="slider" id="combineRatioSlider" min="0" max="100" value="50" step="1">
+    </div>
+  </div>
+
+  <div class="section">
+    <button class="activate-btn" id="combineActivateBtn">✦ Activate Combined Filter</button>
+  </div>
+</div><!-- end #combinePage -->
 
 </div><!-- end .pages-wrapper -->
 

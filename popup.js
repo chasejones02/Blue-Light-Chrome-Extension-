@@ -39,6 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterIntensityLabel = document.getElementById('filterIntensityLabel');
   const filterStrengthLabel  = document.getElementById('filterStrengthLabel');
 
+  // Combine page elements
+  const backFromCombineBtn  = document.getElementById('backFromCombineBtn');
+  const combineFilter1Grid  = document.getElementById('combineFilter1Grid');
+  const combineFilter2Grid  = document.getElementById('combineFilter2Grid');
+  const combineRatioSlider  = document.getElementById('combineRatioSlider');
+  const combineRatioValue   = document.getElementById('combineRatioValue');
+  const combineActivateBtn  = document.getElementById('combineActivateBtn');
+  const combineRatioLabelA  = document.getElementById('combineRatioLabelA');
+  const combineRatioLabelB  = document.getElementById('combineRatioLabelB');
+
   // Color blindness type selector elements
   const cbTypeSection = document.getElementById('cbTypeSection');
   const cbTypeBtns    = document.querySelectorAll('.cb-type-option');
@@ -435,12 +445,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Intensity
     intensitySlider.value = currentSettings.intensity || 80;
     intensityValue.textContent = `${currentSettings.intensity || 80}%`;
+
+    // Combine page (sync if open)
+    updateCombinePageUI();
   }
 
   const MODE_NAMES = {
     'bluelight':          'Blue Light',
     'darkmode':           'Dark Mode',
     'both':               'Blue Light + Dark',
+    'combine':            'Combined',
     'sleep-prep':         'Sleep Prep',
     'reduce-eye-strain':  'Eye Strain',
     'reader-mode':        'Reader Mode',
@@ -494,6 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
   backBtn.addEventListener('click', () => {
     pagesWrapper.classList.remove('on-filters');
     pagesWrapper.classList.remove('on-detail');
+    pagesWrapper.classList.remove('on-combine');
   });
 
   backToFiltersBtn.addEventListener('click', () => {
@@ -628,7 +643,14 @@ document.addEventListener('DOMContentLoaded', () => {
       modeBtns.forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       currentSettings.mode = btn.dataset.mode;
-      saveSettings();
+
+      if (btn.dataset.mode === 'combine') {
+        pagesWrapper.classList.remove('on-filters', 'on-detail');
+        pagesWrapper.classList.add('on-combine');
+        updateCombinePageUI();
+      } else {
+        saveSettings();
+      }
     });
   });
 
@@ -735,6 +757,115 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     saveSettings();
     updateStatus();
+  });
+
+  // ── Combine Filters Page ─────────────────
+
+  const COMBINE_FILTER_NAMES = {
+    'bluelight':         'Blue Light',
+    'darkmode':          'Dark Mode',
+    'sleep-prep':        'Sleep Prep',
+    'reduce-eye-strain': 'Eye Strain',
+    'reader-mode':       'Reader'
+  };
+
+  function updateCombineRatioLabels() {
+    const f1Name = COMBINE_FILTER_NAMES[currentSettings.combineFilter1] || 'Filter A';
+    const f2Name = COMBINE_FILTER_NAMES[currentSettings.combineFilter2] || 'Filter B';
+    combineRatioLabelA.textContent = f1Name;
+    combineRatioLabelB.textContent = f2Name;
+    const pctA = Math.round((1 - (currentSettings.combineRatio ?? 0.5)) * 100);
+    const pctB = 100 - pctA;
+    combineRatioValue.textContent = `${pctA} / ${pctB}`;
+  }
+
+  function updateCombineDisabledStates() {
+    const f1 = currentSettings.combineFilter1;
+    const f2 = currentSettings.combineFilter2;
+    combineFilter1Grid.querySelectorAll('.combine-option').forEach(opt => {
+      opt.classList.toggle('disabled', opt.dataset.combine === f2);
+    });
+    combineFilter2Grid.querySelectorAll('.combine-option').forEach(opt => {
+      opt.classList.toggle('disabled', opt.dataset.combine === f1);
+    });
+  }
+
+  function updateCombinePageUI() {
+    const f1 = currentSettings.combineFilter1 || 'bluelight';
+    const f2 = currentSettings.combineFilter2 || 'darkmode';
+    const ratio = currentSettings.combineRatio ?? 0.5;
+
+    combineFilter1Grid.querySelectorAll('.combine-option').forEach(opt => {
+      opt.classList.toggle('selected', opt.dataset.combine === f1);
+    });
+    combineFilter2Grid.querySelectorAll('.combine-option').forEach(opt => {
+      opt.classList.toggle('selected', opt.dataset.combine === f2);
+    });
+
+    combineRatioSlider.value = Math.round(ratio * 100);
+    updateCombineDisabledStates();
+    updateCombineRatioLabels();
+
+    const isActive = currentSettings.mode === 'combine' && currentSettings.manualActive;
+    combineActivateBtn.textContent = isActive ? '⏹ Deactivate Combined Filter' : '✦ Activate Combined Filter';
+    combineActivateBtn.classList.toggle('active', isActive);
+  }
+
+  function setupCombineGrid(grid, settingsKey) {
+    grid.querySelectorAll('.combine-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        grid.querySelectorAll('.combine-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        currentSettings[settingsKey] = opt.dataset.combine;
+        updateCombineDisabledStates();
+        updateCombineRatioLabels();
+        if (currentSettings.mode === 'combine' && currentSettings.manualActive) {
+          saveSettings();
+        }
+      });
+    });
+  }
+
+  setupCombineGrid(combineFilter1Grid, 'combineFilter1');
+  setupCombineGrid(combineFilter2Grid, 'combineFilter2');
+
+  combineRatioSlider.addEventListener('input', () => {
+    currentSettings.combineRatio = parseInt(combineRatioSlider.value) / 100;
+    updateCombineRatioLabels();
+  });
+
+  combineRatioSlider.addEventListener('change', () => {
+    if (currentSettings.mode === 'combine' && currentSettings.manualActive) {
+      saveSettings();
+    }
+  });
+
+  combineActivateBtn.addEventListener('click', () => {
+    const alreadyActive = currentSettings.mode === 'combine' && currentSettings.manualActive;
+
+    if (alreadyActive) {
+      currentSettings.manualActive = false;
+      combineActivateBtn.textContent = '✦ Activate Combined Filter';
+      combineActivateBtn.classList.remove('active');
+    } else {
+      currentSettings.mode = 'combine';
+      currentSettings.manualActive = true;
+      combineActivateBtn.textContent = '⏹ Deactivate Combined Filter';
+      combineActivateBtn.classList.add('active');
+    }
+
+    // Sync main-page mode buttons and filter cards
+    modeBtns.forEach(b => b.classList.toggle('selected', b.dataset.mode === currentSettings.mode));
+    filterCards.forEach(card => {
+      card.classList.toggle('selected', card.dataset.filter === currentSettings.mode && currentSettings.manualActive);
+    });
+
+    saveSettings();
+    updateStatus();
+  });
+
+  backFromCombineBtn.addEventListener('click', () => {
+    pagesWrapper.classList.remove('on-combine');
   });
 
   // ── Initialize ───────────────────────────
