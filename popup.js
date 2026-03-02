@@ -56,6 +56,12 @@ document.addEventListener('DOMContentLoaded', () => {
       swatchColor: '#F5E6C8',
       desc: 'Low-contrast sepia warmth mimicking warm paper. Reduces glare and contrast fatigue during long reading sessions.',
       cctStops: [[20, '~5800K'], [40, '~4500K'], [60, '~3800K'], [80, '~3400K'], [100, '~3000K']]
+    },
+    'grayscale': {
+      name: 'Grayscale',
+      swatchColor: 'linear-gradient(135deg, #6b7280, #d1d5db)',
+      desc: 'Removes color from the screen to reduce dopamine-triggering design patterns. 60–80% desaturation is less jarring while still cutting color distraction.',
+      cctStops: [[20, 'Subtle'], [40, 'Moderate'], [60, 'Strong'], [80, 'Very Strong'], [100, 'Full Grayscale']]
     }
   };
 
@@ -161,7 +167,8 @@ document.addEventListener('DOMContentLoaded', () => {
     'both':               'Blue Light + Dark',
     'sleep-prep':         'Sleep Prep',
     'reduce-eye-strain':  'Eye Strain',
-    'reader-mode':        'Reader Mode'
+    'reader-mode':        'Reader Mode',
+    'grayscale':          'Grayscale'
   };
 
   function updateStatus() {
