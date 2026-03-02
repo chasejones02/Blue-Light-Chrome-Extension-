@@ -187,9 +187,10 @@
     // ── OFF: fade current filter out ─────────────────────────────────
     if (intensity <= 0) {
       _activeHtmlMode = null;
-      // Dark mode off: use a fast fade to minimise the window where images
-      // appear inverted (re-inversion rules are removed when style changes).
-      const dur = wasDark ? '0.3s' : '10s';
+      // Dark mode off: use a moderate fade to gently reduce brightness;
+      // longer feels gentler but the image-inversion artifact (no counter-inversion
+      // rules) lasts for the full duration, so keep it under ~1–2s.
+      const dur = wasDark ? '3s' : '10s';
       style.textContent = `
         html { filter: none !important; transition: filter ${dur} ease !important; }
       `;
@@ -201,9 +202,11 @@
     if (isCrossType) {
       _activeHtmlMode = null;
 
-      // Dark → scientific: snap off quickly (0.3s) to minimise image inversion artifact.
+      // Dark → scientific: use a moderate fade (1s) to gently reduce brightness;
+      //   slightly longer than the old 0.3s snap but still quick enough to limit
+      //   the image-inversion window (dark mode uses invert(100%) on <html>).
       // Scientific → dark: ease to white (2s) before the page starts darkening.
-      const fadeOutMs = wasDark ? 300 : 2000;
+      const fadeOutMs = wasDark ? 2000 : 2000;
       style.textContent = `
         html { filter: none !important; transition: filter ${fadeOutMs}ms ease !important; }
       `;
