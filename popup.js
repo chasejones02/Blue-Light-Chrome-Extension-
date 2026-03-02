@@ -36,6 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterIntensitySlider = document.getElementById('filterIntensitySlider');
   const filterIntensityValue  = document.getElementById('filterIntensityValue');
   const filterActivateBtn  = document.getElementById('filterActivateBtn');
+  const filterIntensityLabel = document.getElementById('filterIntensityLabel');
+  const filterStrengthLabel  = document.getElementById('filterStrengthLabel');
+
+  // Color blindness type selector elements
+  const cbTypeSection = document.getElementById('cbTypeSection');
+  const cbTypeBtns    = document.querySelectorAll('.cb-type-option');
+  const cbTypeDesc    = document.getElementById('cbTypeDesc');
 
   // Metadata for the three scientific filter modes
   const FILTER_META = {
@@ -62,7 +69,19 @@ document.addEventListener('DOMContentLoaded', () => {
       swatchColor: 'linear-gradient(135deg, #6b7280, #d1d5db)',
       desc: 'Removes color from the screen to reduce dopamine-triggering design patterns. 60–80% desaturation is less jarring while still cutting color distraction.',
       cctStops: [[20, 'Subtle'], [40, 'Moderate'], [60, 'Strong'], [80, 'Very Strong'], [100, 'Full Grayscale']]
+    },
+    'colorblind': {
+      name: 'Color Blind Assist',
+      swatchColor: 'linear-gradient(135deg, #4ade80, #6c8cff, #f5a623)',
+      desc: 'Applies Daltonization correction to shift colors you cannot perceive into channels you can. Based on Viénot, Brettel & Mollon simulation models.',
+      cctStops: [[20, 'Subtle'], [40, 'Moderate'], [60, 'Strong'], [80, 'Very Strong'], [100, 'Full Correction']]
     }
+  };
+
+  const CB_TYPE_META = {
+    protanopia:   { label: 'Protanopia',   desc: 'Red-blind (L-cone deficiency). ~1.3% of males. Difficulty distinguishing red from green.' },
+    deuteranopia: { label: 'Deuteranopia', desc: 'Green-blind (M-cone deficiency). ~5% of males. Most common form. Red-green confusion.' },
+    tritanopia:   { label: 'Tritanopia',   desc: 'Blue-blind (S-cone deficiency). ~0.01% of population. Blue-yellow confusion.' }
   };
 
   function getNearestCCT(mode, intensity) {
@@ -168,7 +187,8 @@ document.addEventListener('DOMContentLoaded', () => {
     'sleep-prep':         'Sleep Prep',
     'reduce-eye-strain':  'Eye Strain',
     'reader-mode':        'Reader Mode',
-    'grayscale':          'Grayscale'
+    'grayscale':          'Grayscale',
+    'colorblind':         'Color Blind Assist'
   };
 
   function updateStatus() {
@@ -223,6 +243,20 @@ document.addEventListener('DOMContentLoaded', () => {
     pagesWrapper.classList.remove('on-detail');
   });
 
+  // ── Color Blindness Type Selection ──────
+  cbTypeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      cbTypeBtns.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      currentSettings.colorblindType = btn.dataset.cbtype;
+      cbTypeDesc.textContent = CB_TYPE_META[btn.dataset.cbtype].desc;
+      // Apply immediately if this mode is already active
+      if (currentSettings.mode === 'colorblind' && currentSettings.manualActive) {
+        saveSettings();
+      }
+    });
+  });
+
   // ── Filter Card → Detail Page ─────────────
   filterCards.forEach(card => {
     card.addEventListener('click', () => {
@@ -239,6 +273,20 @@ document.addEventListener('DOMContentLoaded', () => {
       filterIntensitySlider.value = intensity;
       filterIntensityValue.textContent = `${intensity}%`;
       filterCCT.textContent = getNearestCCT(currentDetailMode, intensity);
+
+      // Color blindness type selector: show/hide and configure
+      if (currentDetailMode === 'colorblind') {
+        cbTypeSection.classList.remove('hidden');
+        filterIntensityLabel.textContent = 'Severity';
+        filterStrengthLabel.textContent = 'Correction strength';
+        const cbType = currentSettings.colorblindType || 'deuteranopia';
+        cbTypeBtns.forEach(b => b.classList.toggle('selected', b.dataset.cbtype === cbType));
+        cbTypeDesc.textContent = CB_TYPE_META[cbType].desc;
+      } else {
+        cbTypeSection.classList.add('hidden');
+        filterIntensityLabel.textContent = 'Intensity';
+        filterStrengthLabel.textContent = 'Filter strength';
+      }
 
       // Reflect whether this mode is currently active
       const isActive = currentSettings.mode === currentDetailMode && currentSettings.manualActive;

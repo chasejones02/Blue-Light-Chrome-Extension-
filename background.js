@@ -13,7 +13,8 @@ const DEFAULT_SETTINGS = {
   currentIntensity: 0,      // actual current applied intensity
   isActive: false,
   manualActive: false,      // persistent manual override (ignores schedule)
-  timerEnabled: false       // whether the manual schedule is armed
+  timerEnabled: false,      // whether the manual schedule is armed
+  colorblindType: 'deuteranopia'  // 'protanopia', 'deuteranopia', 'tritanopia'
 };
 
 // ── Sunset/Sunrise Calculation ──────────────────────────────────
@@ -96,7 +97,8 @@ async function applyToAllTabs(settings, currentIntensity) {
       type: 'UPDATE_FILTER',
       mode: settings.mode,
       intensity: currentIntensity,
-      enabled: settings.enabled && currentIntensity > 0
+      enabled: settings.enabled && currentIntensity > 0,
+      colorblindType: settings.colorblindType
     };
     
     for (const tab of tabs) {
@@ -243,7 +245,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
             type: 'UPDATE_FILTER',
             mode: settings.mode,
             intensity: currentIntensity,
-            enabled: true
+            enabled: true,
+            colorblindType: settings.colorblindType
           }).catch(() => {});
         }
       }
