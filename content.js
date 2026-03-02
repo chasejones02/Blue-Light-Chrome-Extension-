@@ -150,6 +150,17 @@
       return;
     }
 
+    if (mode === 'grayscale') {
+      const amount = (intensity / 100).toFixed(3);
+      style.textContent = `
+        html {
+          filter: grayscale(${amount}) !important;
+          transition: filter 0.8s ease !important;
+        }
+      `;
+      return;
+    }
+
     // Unknown mode fallback
     style.textContent = `
       html { filter: none !important; transition: filter 10s ease !important; }
@@ -182,7 +193,11 @@
     const wasDark       = prev === 'darkmode';
     const isScientific  = !!FILTER_KEYFRAMES[mode];
     const wasScientific = !!FILTER_KEYFRAMES[prev];
-    const isCrossType   = (isDark && wasScientific) || (isScientific && wasDark);
+    const isGrayscale   = mode === 'grayscale';
+    const wasGrayscale  = prev === 'grayscale';
+    const isCrossType   = (isDark && wasScientific) || (isScientific && wasDark) ||
+                          (isGrayscale && (wasDark || wasScientific)) ||
+                          ((isDark || isScientific) && wasGrayscale);
 
     // ── OFF: fade current filter out ─────────────────────────────────
     if (intensity <= 0) {
@@ -250,6 +265,9 @@
     } else if (mode === 'both') {
       applyBlueLight(intensity);
       applyHtmlFilter('darkmode', intensity * 0.7);
+    } else if (mode === 'grayscale') {
+      applyBlueLight(0);
+      applyHtmlFilter('grayscale', intensity);
     }
   }
 
