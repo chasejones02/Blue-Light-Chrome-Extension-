@@ -155,6 +155,19 @@
     }
   };
 
+  // Darkmode-compatible keyframes for combine mode.
+  // Approximates darkmode's visual effect (heavy dimming + slight warmth) using the same
+  // 4-function signature so it can be mathematically merged with scientific filters.
+  // Standalone darkmode (invert+hue-rotate) is unchanged; this is only used in combine mode.
+  const DARKMODE_COMPAT_KEYFRAMES = {
+      0: { sepia: 0,    saturate: 1.00, brightness: 1.00, contrast: 1.00 },
+     20: { sepia: 0.02, saturate: 0.95, brightness: 0.80, contrast: 1.05 },
+     40: { sepia: 0.05, saturate: 0.90, brightness: 0.60, contrast: 1.10 },
+     60: { sepia: 0.08, saturate: 0.85, brightness: 0.45, contrast: 1.15 },
+     80: { sepia: 0.10, saturate: 0.80, brightness: 0.30, contrast: 1.20 },
+    100: { sepia: 0.12, saturate: 0.75, brightness: 0.20, contrast: 1.25 }
+  };
+
   const FILTER_STOPS = [0, 20, 40, 60, 80, 100];
 
   function lerpObj(a, b, t) {
@@ -177,6 +190,90 @@
     const p = lerpObj(frames[lo], frames[hi], t);
     const f = (v) => v.toFixed(3);
     return `sepia(${f(p.sepia)}) saturate(${f(p.saturate)}) brightness(${f(p.brightness)}) contrast(${f(p.contrast)})`;
+  }
+
+  // Return raw {sepia, saturate, brightness, contrast} values for a mode at a given intensity.
+  // Uses DARKMODE_COMPAT_KEYFRAMES when mode === 'darkmode' so it can merge with scientific filters.
+  function computeFilterValues(mode, intensity) {
+    const frames = (mode === 'darkmode') ? DARKMODE_COMPAT_KEYFRAMES : FILTER_KEYFRAMES[mode];
+    if (!frames) return null;
+    const clamped = Math.max(0, Math.min(100, intensity));
+    let lo = 0, hi = 20;
+    for (let i = 0; i < FILTER_STOPS.length - 1; i++) {
+      if (clamped >= FILTER_STOPS[i] && clamped <= FILTER_STOPS[i + 1]) {
+        lo = FILTER_STOPS[i]; hi = FILTER_STOPS[i + 1]; break;
+      }
+    }
+    const t = hi === lo ? 1 : (clamped - lo) / (hi - lo);
+    return lerpObj(frames[lo], frames[hi], t);
+  }
+
+  // ── Combined filter application ──────────────────────────────────
+  // Applies two filters simultaneously based on a blend ratio.
+  // intensityA = overall intensity * (1 - ratio), intensityB = overall intensity * ratio.
+  function applyCombinedFilter(data) {
+    const { intensity, combineFilter1, combineFilter2, combineRatio } = data;
+    const ratio = combineRatio ?? 0.5;
+    const intensityA = intensity * (1 - ratio);
+    const intensityB = intensity * ratio;
+
+    const f1 = combineFilter1 || 'bluelight';
+    const f2 = combineFilter2 || 'darkmode';
+    const isBluelightA = (f1 === 'bluelight');
+    const isBluelightB = (f2 === 'bluelight');
+
+    // Case 1: bluelight + html-filter — overlay div + style tag coexist naturally
+    if (isBluelightA && !isBluelightB) {
+      applyBlueLight(intensityA);
+      applyHtmlFilter(f2, intensityB);
+      return;
+    }
+    if (isBluelightB && !isBluelightA) {
+      applyBlueLight(intensityB);
+      applyHtmlFilter(f1, intensityA);
+      return;
+    }
+
+    // Case 2: bluelight + bluelight (shouldn't happen, but handle gracefully)
+    if (isBluelightA && isBluelightB) {
+      applyBlueLight(intensity);
+      applyHtmlFilter(null, 0);
+      return;
+    }
+
+    // Case 3: Two html-filter modes — mathematically merge into a single CSS chain.
+    // Both filters produce {sepia, saturate, brightness, contrast} values.
+    // Darkmode uses DARKMODE_COMPAT_KEYFRAMES for mergeability.
+    applyBlueLight(0);
+
+    const valsA = computeFilterValues(f1, intensityA);
+    const valsB = computeFilterValues(f2, intensityB);
+
+    if (!valsA && !valsB) { applyHtmlFilter(null, 0); return; }
+    if (!valsA) { applyHtmlFilter(f2, intensityB); return; }
+    if (!valsB) { applyHtmlFilter(f1, intensityA); return; }
+
+    // Merge: sepia is additive (neutral=0), brightness/saturate/contrast are multiplicative (neutral=1)
+    const merged = {};
+    for (const k of Object.keys(valsA)) {
+      if (k === 'sepia') {
+        merged[k] = Math.min(1, valsA[k] + valsB[k]);
+      } else {
+        merged[k] = valsA[k] * valsB[k];
+      }
+    }
+
+    const style = getHtmlFilterStyle();
+    if (_pendingTimeout !== null) { clearTimeout(_pendingTimeout); _pendingTimeout = null; }
+    _activeHtmlMode = 'combine';
+    removeCBSvg();
+    const f = (v) => v.toFixed(3);
+    style.textContent = `
+      html {
+        filter: sepia(${f(merged.sepia)}) saturate(${f(merged.saturate)}) brightness(${f(merged.brightness)}) contrast(${f(merged.contrast)}) !important;
+        transition: filter 0.8s ease !important;
+      }
+    `;
   }
 
   // ── Overlay (Blue Light mode) ─────────────────────────────────────
@@ -323,11 +420,14 @@
     const wasGrayscale  = prev === 'grayscale';
     const isColorblind  = mode === 'colorblind';
     const wasColorblind = prev === 'colorblind';
+    const wasCombine    = prev === 'combine';
     const isCrossType   = (isDark && wasScientific) || (isScientific && wasDark) ||
                           (isGrayscale && (wasDark || wasScientific)) ||
                           ((isDark || isScientific) && wasGrayscale) ||
                           (isColorblind && prev !== null && prev !== 'colorblind') ||
-                          (wasColorblind && mode !== 'colorblind' && mode !== null);
+                          (wasColorblind && mode !== 'colorblind' && mode !== null) ||
+                          (wasCombine && mode !== 'combine' && mode !== null) ||
+                          (!wasCombine && prev !== null && mode === 'combine');
 
     // ── OFF: fade current filter out ─────────────────────────────────
     if (intensity <= 0) {
@@ -399,6 +499,8 @@
       applyBlueLight(0);
       _cbType = data.colorblindType || 'deuteranopia';
       applyHtmlFilter('colorblind', intensity);
+    } else if (mode === 'combine') {
+      applyCombinedFilter(data);
     }
   }
 
@@ -423,7 +525,10 @@
           mode: s.mode,
           intensity: s.currentIntensity,
           enabled: s.enabled && s.currentIntensity > 0,
-          colorblindType: s.colorblindType
+          colorblindType: s.colorblindType,
+          combineFilter1: s.combineFilter1,
+          combineFilter2: s.combineFilter2,
+          combineRatio: s.combineRatio
         });
       }
     });

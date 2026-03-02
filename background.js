@@ -3,7 +3,7 @@
 
 const DEFAULT_SETTINGS = {
   enabled: true,
-  mode: 'bluelight',        // 'bluelight', 'darkmode', 'both'
+  mode: 'bluelight',        // 'bluelight', 'darkmode', 'both', 'combine', etc.
   scheduleType: 'manual',   // 'manual' or 'auto'
   startTime: '21:00',       // 9 PM
   endTime: '07:00',         // 7 AM
@@ -14,7 +14,10 @@ const DEFAULT_SETTINGS = {
   isActive: false,
   manualActive: false,      // persistent manual override (ignores schedule)
   timerEnabled: false,      // whether the manual schedule is armed
-  colorblindType: 'deuteranopia'  // 'protanopia', 'deuteranopia', 'tritanopia'
+  colorblindType: 'deuteranopia', // 'protanopia', 'deuteranopia', 'tritanopia'
+  combineFilter1: 'bluelight',   // first filter in combine mode
+  combineFilter2: 'darkmode',    // second filter in combine mode
+  combineRatio: 0.5              // 0 = 100% filter1, 1 = 100% filter2
 };
 
 // ── Sunset/Sunrise Calculation ──────────────────────────────────
@@ -98,9 +101,12 @@ async function applyToAllTabs(settings, currentIntensity) {
       mode: settings.mode,
       intensity: currentIntensity,
       enabled: settings.enabled && currentIntensity > 0,
-      colorblindType: settings.colorblindType
+      colorblindType: settings.colorblindType,
+      combineFilter1: settings.combineFilter1,
+      combineFilter2: settings.combineFilter2,
+      combineRatio: settings.combineRatio
     };
-    
+
     for (const tab of tabs) {
       if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
         try {
@@ -246,7 +252,10 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
             mode: settings.mode,
             intensity: currentIntensity,
             enabled: true,
-            colorblindType: settings.colorblindType
+            colorblindType: settings.colorblindType,
+            combineFilter1: settings.combineFilter1,
+            combineFilter2: settings.combineFilter2,
+            combineRatio: settings.combineRatio
           }).catch(() => {});
         }
       }
