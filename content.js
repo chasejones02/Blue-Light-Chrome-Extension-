@@ -1,16 +1,16 @@
-// NightGuard — Content Script
+// ChromeTones — Content Script
 // Injects blue light filter overlay and/or dark mode CSS into web pages
 
 (function() {
   'use strict';
 
-  if (window.__nightguard_loaded) return;
-  window.__nightguard_loaded = true;
+  if (window.__chrometones_loaded) return;
+  window.__chrometones_loaded = true;
 
-  const OVERLAY_ID    = 'nightguard-overlay';
-  const HTMLFILTER_ID = 'nightguard-html-filter'; // single tag owns ALL html { filter } rules
-  const CB_SVG_ID     = 'nightguard-cb-svg';
-  const CB_FILTER_ID  = 'nightguard-cb-filter';
+  const OVERLAY_ID    = 'chrometones-overlay';
+  const HTMLFILTER_ID = 'chrometones-html-filter'; // single tag owns ALL html { filter } rules
+  const CB_SVG_ID     = 'chrometones-cb-svg';
+  const CB_FILTER_ID  = 'chrometones-cb-filter';
 
   // ── Color Blindness Daltonization ──────────────────────────────
   // Simulation matrices from Viénot, Brettel & Mollon (1999).

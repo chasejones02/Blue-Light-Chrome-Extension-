@@ -1,4 +1,4 @@
-// NightGuard — Popup Script
+// ChromeTones — Popup Script
 // Handles UI interactions and settings management
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // SVG filter for the popup preview
-  const CB_PREVIEW_FILTER_ID = 'nightguard-cb-preview';
+  const CB_PREVIEW_FILTER_ID = 'chrometones-cb-preview';
   let cbPreviewSvg = null;
 
   function ensureCBPreviewSvg() {
