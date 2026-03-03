@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "NightGuard — Blue Light & Dark Mode Scheduler",
+  "name": "ChromeTones — Blue Light & Dark Mode Scheduler",
   "version": "1.0.0",
   "description": "Automatically reduces blue light and activates dark mode on a schedule. Gradual transitions for comfortable nighttime browsing.",
   "permissions": [

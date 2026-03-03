@@ -1,4 +1,4 @@
-// NightGuard — Background Service Worker
+// ChromeTones — Background Service Worker
 // Handles scheduling, alarms, sunset/sunrise calculations, and messaging
 
 const DEFAULT_SETTINGS = {
@@ -164,14 +164,14 @@ async function updateFilter() {
 // ── Alarms ──────────────────────────────────────────────────────
 // Check every minute for gradual transitions.
 // Guard against recreating (and thus resetting) the alarm on every service worker wake-up.
-chrome.alarms.get('nightguard-tick', (existing) => {
+chrome.alarms.get('chrometones-tick', (existing) => {
   if (!existing) {
-    chrome.alarms.create('nightguard-tick', { periodInMinutes: 1 });
+    chrome.alarms.create('chrometones-tick', { periodInMinutes: 1 });
   }
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === 'nightguard-tick') {
+  if (alarm.name === 'chrometones-tick') {
     updateFilter();
   }
 });
