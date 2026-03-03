@@ -864,6 +864,13 @@ document.addEventListener('DOMContentLoaded', () => {
     pagesWrapper.classList.remove('on-combine');
   });
 
+  // ── Rate Button ─────────────────────────
+  document.getElementById('rateBtn').addEventListener('click', () => {
+    chrome.tabs.create({
+      url: `https://chromewebstore.google.com/detail/${chrome.runtime.id}/reviews`
+    });
+  });
+
   // ── Initialize ───────────────────────────
   loadSettings();
 

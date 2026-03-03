@@ -123,42 +123,46 @@ async function applyToAllTabs(settings, currentIntensity) {
 
 // ── Main Update Loop ────────────────────────────────────────────
 async function updateFilter() {
-  const result = await chrome.storage.local.get('settings');
-  const settings = { ...DEFAULT_SETTINGS, ...(result.settings || {}) };
-  
-  if (!settings.enabled) {
-    settings.currentIntensity = 0;
-    settings.isActive = false;
+  try {
+    const result = await chrome.storage.local.get('settings');
+    const settings = { ...DEFAULT_SETTINGS, ...(result.settings || {}) };
+
+    if (!settings.enabled) {
+      settings.currentIntensity = 0;
+      settings.isActive = false;
+      await chrome.storage.local.set({ settings });
+      await applyToAllTabs(settings, 0);
+      return;
+    }
+
+    let startTime = settings.startTime;
+    let endTime = settings.endTime;
+
+    // Auto sunset/sunrise
+    if (settings.scheduleType === 'auto' && settings.latitude && settings.longitude) {
+      const sunTimes = calculateSunTimes(settings.latitude, settings.longitude, new Date());
+      startTime = sunTimes.sunset;
+      endTime = sunTimes.sunrise;
+      settings.startTime = startTime;
+      settings.endTime = endTime;
+    }
+
+    let currentIntensity;
+    if (settings.manualActive) {
+      currentIntensity = settings.intensity;
+    } else if (settings.scheduleType === 'manual' && !settings.timerEnabled) {
+      currentIntensity = 0;
+    } else {
+      currentIntensity = calculateCurrentIntensity(settings);
+    }
+    settings.currentIntensity = currentIntensity;
+    settings.isActive = currentIntensity > 0;
+
     await chrome.storage.local.set({ settings });
-    await applyToAllTabs(settings, 0);
-    return;
+    await applyToAllTabs(settings, currentIntensity);
+  } catch (e) {
+    // Service worker may lose context mid-execution; safe to ignore
   }
-  
-  let startTime = settings.startTime;
-  let endTime = settings.endTime;
-
-  // Auto sunset/sunrise
-  if (settings.scheduleType === 'auto' && settings.latitude && settings.longitude) {
-    const sunTimes = calculateSunTimes(settings.latitude, settings.longitude, new Date());
-    startTime = sunTimes.sunset;
-    endTime = sunTimes.sunrise;
-    settings.startTime = startTime;
-    settings.endTime = endTime;
-  }
-
-  let currentIntensity;
-  if (settings.manualActive) {
-    currentIntensity = settings.intensity;
-  } else if (settings.scheduleType === 'manual' && !settings.timerEnabled) {
-    currentIntensity = 0;
-  } else {
-    currentIntensity = calculateCurrentIntensity(settings);
-  }
-  settings.currentIntensity = currentIntensity;
-  settings.isActive = currentIntensity > 0;
-
-  await chrome.storage.local.set({ settings });
-  await applyToAllTabs(settings, currentIntensity);
 }
 
 // ── Alarms ──────────────────────────────────────────────────────
