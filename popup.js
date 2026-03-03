@@ -819,9 +819,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentSettings[settingsKey] = opt.dataset.combine;
         updateCombineDisabledStates();
         updateCombineRatioLabels();
-        if (currentSettings.mode === 'combine' && currentSettings.manualActive) {
-          saveSettings();
-        }
+        saveSettings();
       });
     });
   }
@@ -835,9 +833,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   combineRatioSlider.addEventListener('change', () => {
-    if (currentSettings.mode === 'combine' && currentSettings.manualActive) {
-      saveSettings();
-    }
+    saveSettings();
   });
 
   combineActivateBtn.addEventListener('click', () => {
