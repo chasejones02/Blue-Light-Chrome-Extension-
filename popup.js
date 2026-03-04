@@ -874,7 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Suggestions Button ─────────────────
   document.getElementById('suggestBtn').addEventListener('click', () => {
     chrome.tabs.create({
-      url: 'https://forms.gle/PLACEHOLDER'
+      url: 'https://docs.google.com/forms/d/e/1FAIpQLSdueEA35glr4J9VXs_XwZlP4jV6Sy2ns3yMG5uD25ZJ5zZUuA/viewform?usp=dialog'
     });
   });
 
