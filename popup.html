@@ -535,6 +535,20 @@
       text-decoration: underline;
     }
 
+    .suggest-link {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--accent-blue);
+      opacity: 0.7;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .suggest-link:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+
     /* ── Hidden ────────────────────────────── */
     .hidden {
       display: none !important;
@@ -1015,8 +1029,8 @@
   </div>
 
   <div class="footer">
-    ChromeTones v1.0 — Protect your eyes, improve your sleep
     <div class="rate-link" id="rateBtn">Enjoying ChromeTones? Rate us ★</div>
+    <div class="suggest-link" id="suggestBtn">Have a suggestion? Let us know →</div>
   </div>
 
 </div><!-- end #mainPage -->

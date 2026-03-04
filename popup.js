@@ -871,6 +871,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // ── Suggestions Button ─────────────────
+  document.getElementById('suggestBtn').addEventListener('click', () => {
+    chrome.tabs.create({
+      url: 'https://forms.gle/PLACEHOLDER'
+    });
+  });
+
   // ── Initialize ───────────────────────────
   loadSettings();
 
