@@ -2,6 +2,26 @@
 // Handles UI interactions and settings management
 
 document.addEventListener('DOMContentLoaded', () => {
+  // ── Payment Gating ─────────────────────────
+  const PREMIUM_MODES = new Set([
+    'sleep-prep', 'reduce-eye-strain', 'reader-mode',
+    'grayscale', 'colorblind', 'combine'
+  ]);
+
+  let isPro = false;
+
+  function checkPaidStatus() {
+    chrome.runtime.sendMessage({ type: 'CHECK_PAID' }, (response) => {
+      if (response) isPro = response.paid;
+    });
+  }
+
+  function openPaymentPage() {
+    chrome.runtime.sendMessage({ type: 'OPEN_PAYMENT_PAGE' });
+  }
+
+  checkPaidStatus();
+
   // ── Elements ─────────────────────────────
   const masterToggle = document.getElementById('masterToggle');
   const settingsArea = document.getElementById('settingsArea');
@@ -368,6 +388,14 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.runtime.sendMessage({ type: 'GET_STATUS' }, (response) => {
       if (!response || !response.settings) return;
       currentSettings = response.settings;
+
+      // If subscription expired and a premium mode is active, reset to free mode
+      if (!isPro && currentSettings.manualActive && PREMIUM_MODES.has(currentSettings.mode)) {
+        currentSettings.mode = 'bluelight';
+        currentSettings.manualActive = false;
+        saveSettings();
+      }
+
       updateUI();
     });
   }
@@ -606,6 +634,12 @@ document.addEventListener('DOMContentLoaded', () => {
   filterActivateBtn.addEventListener('click', () => {
     const alreadyActive = currentSettings.mode === currentDetailMode && currentSettings.manualActive;
 
+    // Gate premium filters for free users (deactivation is always allowed)
+    if (!alreadyActive && !isPro && PREMIUM_MODES.has(currentDetailMode)) {
+      openPaymentPage();
+      return;
+    }
+
     if (alreadyActive) {
       currentSettings.manualActive = false;
       filterActivateBtn.textContent = '✦ Activate Filter';
@@ -645,6 +679,10 @@ document.addEventListener('DOMContentLoaded', () => {
       currentSettings.mode = btn.dataset.mode;
 
       if (btn.dataset.mode === 'combine') {
+        if (!isPro) {
+          openPaymentPage();
+          return;
+        }
         pagesWrapper.classList.remove('on-filters', 'on-detail');
         pagesWrapper.classList.add('on-combine');
         updateCombinePageUI();

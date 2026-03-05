@@ -1,6 +1,10 @@
 // ChromeTones — Background Service Worker
 // Handles scheduling, alarms, sunset/sunrise calculations, and messaging
 
+importScripts('ExtPay.js');
+const extpay = ExtPay('chrometones');
+extpay.startBackground();
+
 const DEFAULT_SETTINGS = {
   enabled: true,
   mode: 'bluelight',        // 'bluelight', 'darkmode', 'both', 'combine', etc.
@@ -234,6 +238,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'FORCE_UPDATE') {
     updateFilter().then(() => sendResponse({ success: true }));
     return true;
+  }
+
+  if (message.type === 'CHECK_PAID') {
+    extpay.getUser().then((user) => {
+      sendResponse({ paid: user.paid });
+    }).catch(() => {
+      sendResponse({ paid: false });
+    });
+    return true;
+  }
+
+  if (message.type === 'OPEN_PAYMENT_PAGE') {
+    extpay.openPaymentPage();
+    return false;
   }
 });
 

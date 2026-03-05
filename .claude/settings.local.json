@@ -3,7 +3,10 @@
     "allow": [
       "Bash(node --version)",
       "Bash(python3 -c \"from PIL import Image; print\\(''Pillow available''\\)\")",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(grep -i \"premium\\\\|pro\\\\|paid\\\\|payment\\\\|extpay\\\\|trial\\\\|subscription\\\\|unlock\\\\|paywall\\\\|license\" \"c:/Users/jones/OneDrive/Documents/GitHub/Blue-Light-Chrome-Extension-\"/*.js)",
+      "Bash(curl -sL \"https://unpkg.com/extensionpay/dist/ExtPay.js\" -o ExtPay.js)",
+      "Bash(curl -sL \"https://unpkg.com/extensionpay@5.5.1/dist/ExtPay.js\" -o ExtPay.js)"
     ]
   }
 }
