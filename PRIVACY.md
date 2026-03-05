@@ -12,6 +12,9 @@ If you enable the automatic sunset/sunrise scheduling feature, your geographic c
 ### Email and Payment Information
 If you purchase a premium subscription, your email address and payment details are collected and processed by [ExtensionPay](https://extensionpay.com) and [Stripe](https://stripe.com). We do not directly store or have access to your credit card information.
 
+### Anonymous Usage Analytics
+We collect anonymous, aggregated usage data via Google Analytics 4 (Measurement Protocol) to understand how features are used and improve the extension. This includes events such as which filter modes are activated and how often the popup is opened. **No cookies are set, no page URLs are collected, and no personally identifiable information is transmitted.** Each installation is assigned a random anonymous identifier stored locally on your device.
+
 ## Data We Do NOT Collect
 
 - Browsing history or web activity
@@ -25,11 +28,13 @@ If you purchase a premium subscription, your email address and payment details a
 
 - **Location data** is used exclusively to determine sunset and sunrise times for automatic filter scheduling.
 - **Payment data** is used exclusively to verify your subscription status and process transactions.
+- **Analytics data** is used exclusively to understand feature usage and improve the extension experience.
 
 ## Third-Party Services
 
 - **ExtensionPay** — Manages premium subscription payments. [Privacy info](https://extensionpay.com)
 - **Stripe** — Processes payment transactions securely. [Privacy policy](https://stripe.com/privacy)
+- **Google Analytics 4** — Collects anonymous usage events via the Measurement Protocol. [Privacy policy](https://policies.google.com/privacy)
 
 ## Data Storage and Security
 

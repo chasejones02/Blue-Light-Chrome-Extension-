@@ -1,7 +1,7 @@
 // ChromeTones — Background Service Worker
 // Handles scheduling, alarms, sunset/sunrise calculations, and messaging
 
-importScripts('ExtPay.js');
+importScripts('ExtPay.js', 'analytics.js');
 const extpay = ExtPay('chrometones');
 extpay.startBackground();
 
@@ -217,6 +217,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   
   if (message.type === 'UPDATE_SETTINGS') {
     chrome.storage.local.set({ settings: message.settings }).then(() => {
+      trackEvent('settings_updated', { mode: message.settings.mode, intensity: message.settings.intensity });
       updateFilter();
       sendResponse({ success: true });
     });
@@ -227,6 +228,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     chrome.storage.local.get('settings').then((result) => {
       const settings = { ...DEFAULT_SETTINGS, ...(result.settings || {}) };
       settings.enabled = !settings.enabled;
+      trackEvent('extension_toggled', { enabled: settings.enabled });
       chrome.storage.local.set({ settings }).then(() => {
         updateFilter();
         sendResponse({ settings });
@@ -247,6 +249,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       sendResponse({ paid: false });
     });
     return true;
+  }
+
+  if (message.type === 'TRACK_EVENT') {
+    trackEvent(message.eventName, message.params || {});
+    return false;
   }
 
   if (message.type === 'OPEN_PAYMENT_PAGE') {
@@ -287,6 +294,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 // ── Initialize ──────────────────────────────────────────────────
 chrome.runtime.onInstalled.addListener(async () => {
+  trackEvent('extension_installed');
   const result = await chrome.storage.local.get('settings');
   if (!result.settings) {
     await chrome.storage.local.set({ settings: DEFAULT_SETTINGS });

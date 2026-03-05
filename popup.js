@@ -605,6 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
       filterActivateBtn.textContent = isActive ? '⏹ Deactivate Filter' : '✦ Activate Filter';
       filterActivateBtn.classList.toggle('active', isActive);
 
+      track('filter_detail_viewed', { filter: currentDetailMode });
       pagesWrapper.classList.add('on-detail');
     });
   });
@@ -677,6 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
       modeBtns.forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       currentSettings.mode = btn.dataset.mode;
+      track('mode_selected', { mode: btn.dataset.mode });
 
       if (btn.dataset.mode === 'combine') {
         if (!isPro) {
@@ -782,6 +784,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Activate Filter button
   activateBtn.addEventListener('click', () => {
     currentSettings.manualActive = !currentSettings.manualActive;
+    track('filter_toggled', { mode: currentSettings.mode, active: currentSettings.manualActive });
     if (currentSettings.manualActive) {
       activateBtn.textContent = '⏹ Deactivate Filter';
       activateBtn.classList.add('active');
@@ -916,8 +919,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // ── Analytics Helper ────────────────────
+  function track(eventName, params = {}) {
+    chrome.runtime.sendMessage({ type: 'TRACK_EVENT', eventName, params });
+  }
+
   // ── Initialize ───────────────────────────
   loadSettings();
+  track('popup_opened');
 
   // Refresh status every 5 seconds while popup is open
   setInterval(loadSettings, 5000);
