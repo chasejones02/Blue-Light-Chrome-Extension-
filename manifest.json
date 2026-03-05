@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ChromeTones — Blue Light & Dark Mode Scheduler",
   "version": "1.0.0",
-  "description": "Automatically reduces blue light and activates dark mode on a schedule. Gradual transitions for comfortable nighttime browsing.",
+  "description": "Scientifically-tuned blue light filters, dark mode, and scheduling — protect your eyes and sleep better, automatically.",
   "permissions": [
     "storage",
     "alarms",
